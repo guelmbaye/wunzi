@@ -54,6 +54,30 @@ make demo        # builds the WZ_DEMO_001 rental deposit case from fixtures
 
 Then open <http://localhost:3000>.
 
+### Without Docker
+
+Running the services directly needs two things compose sets for you:
+
+```bash
+cd apps/api
+php artisan migrate --seed
+php artisan wunzi:token          # prints the API URL and token to paste
+php artisan serve --port=8000
+
+cd ../intelligence
+cp .env.example .env
+uvicorn app.main:app --port 8001
+
+cd ../web
+cp .env.example .env.local       # paste the token from wunzi:token
+npm run dev
+```
+
+`LARAVEL_API_URL` must be `http://localhost:8000`, not the compose default
+`http://api:8000` — that hostname only resolves inside the compose network. And
+every `/api` route bar three sits behind `auth:sanctum`, so without
+`WUNZI_API_TOKEN` the workspace gets 401 on everything.
+
 The root `.env` is what docker compose injects into every service. Each app also
 ships its own `.env.example` for running that service alone — `apps/api`,
 `apps/intelligence` and `apps/web`. The per-service files matter because the
@@ -117,6 +141,8 @@ failure mode with the highest cost.
 - [`docs/responsible-ai.md`](docs/responsible-ai.md) — what WUNZI refuses to do, and why
 - [`docs/limitations.md`](docs/limitations.md) — scope, dataset, language and system limits
 - [`benchmark/README.md`](benchmark/README.md) — metrics, splits, capture procedure, consent
+- [`docs/benchmark-methodology.md`](docs/benchmark-methodology.md) — the two tiers, AfriSwitch, and what each measures
+- [`docs/guide-deploy-wunzi.md`](docs/guide-deploy-wunzi.md) — production deployment on DigitalOcean (French)
 
 ## Tests
 
