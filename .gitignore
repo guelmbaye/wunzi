@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+.venv/
+
+# Build output
+.next/
+apps/web/next-env.d.ts
+apps/web/tsconfig.tsbuildinfo
+.pytest_cache/
+
+# Local config
+.env
+.env.local
+*.log
+
+# Generated benchmark reports — results are committed deliberately, not by accident
+benchmark/reports/*.json
+benchmark/reports/*.csv
+benchmark/reports/*.md
+
+# Audio is never committed. Consented recordings live in private object storage.
+benchmark/fixtures/audio/*
+!benchmark/fixtures/audio/.gitkeep

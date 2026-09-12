@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-wunzi}
+      POSTGRES_USER: ${DB_USERNAME:-wunzi}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-wunzi}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5433:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-wunzi}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-wunzi}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-wunzi-secret}
+    volumes: [miniodata:/data]
+    ports: ["9000:9000", "9001:9001"]
+
+  createbuckets:
+    image: minio/mc:latest
+    depends_on: [minio]
+    entrypoint: >
+      /bin/sh -c "
+      until (mc alias set wunzi http://minio:9000 ${AWS_ACCESS_KEY_ID:-wunzi} ${AWS_SECRET_ACCESS_KEY:-wunzi-secret}) do sleep 2; done;
+      mc mb --ignore-existing wunzi/${AWS_BUCKET:-wunzi-audio};
+      mc anonymous set none wunzi/${AWS_BUCKET:-wunzi-audio};
+      exit 0;"
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    env_file: [.env]
+    volumes:
+      - ./apps/api:/var/www/html
+      - ./benchmark:/benchmark
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["8000:8000"]
+
+  worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    command: php artisan queue:work --tries=3 --timeout=300
+    env_file: [.env]
+    volumes:
+      - ./apps/api:/var/www/html
+      - ./benchmark:/benchmark
+    depends_on: [api, redis]
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+    environment:
+      # Server-side only. The browser never receives these: every read runs in a
+      # Server Component and every write through a Server Action.
+      LARAVEL_API_URL: http://api:8000
+      WUNZI_API_TOKEN: ${WUNZI_API_TOKEN:-}
+      NEXT_PUBLIC_DEMO_MODE: ${WUNZI_MODE:-fixture}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  intelligence:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/intelligence.Dockerfile
+    env_file: [.env]
+    volumes:
+      - ./apps/intelligence:/srv
+      - ./benchmark:/benchmark
+    depends_on:
+      postgres: {condition: service_healthy}
+    ports: ["8001:8001"]
+
+volumes:
+  pgdata:
+  miniodata:

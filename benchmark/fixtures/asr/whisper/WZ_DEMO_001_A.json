@@ -1,0 +1,47 @@
+{
+  "clip_id": "WZ_DEMO_001_A",
+  "model": "whisper-large-v3",
+  "provider_version": null,
+  "text": "Nishyuye deposit ya 50,000 RWF in March, kandi narangije contract yanjye ku wa 30 Kamena. The landlord told me he would refund everything, mais je n'ai rien recu. Ntabwo nangije icyumba. He says there is damage but ntabwo ari njye wangije. Ndashaka gusubizwa deposit yanjye yose.",
+  "segments": [
+    {
+      "start_ms": 0,
+      "end_ms": 4840,
+      "text": "Nishyuye deposit ya 50,000 RWF in March, kandi narangije contract yanjye ku wa 30 Kamena.",
+      "language": null,
+      "confidence": null
+    },
+    {
+      "start_ms": 4840,
+      "end_ms": 8745,
+      "text": "The landlord told me he would refund everything, mais je n'ai rien recu.",
+      "language": null,
+      "confidence": null
+    },
+    {
+      "start_ms": 8745,
+      "end_ms": 10745,
+      "text": "Ntabwo nangije icyumba.",
+      "language": null,
+      "confidence": null
+    },
+    {
+      "start_ms": 10745,
+      "end_ms": 13550,
+      "text": "He says there is damage but ntabwo ari njye wangije.",
+      "language": null,
+      "confidence": null
+    },
+    {
+      "start_ms": 13550,
+      "end_ms": 15695,
+      "text": "Ndashaka gusubizwa deposit yanjye yose.",
+      "language": null,
+      "confidence": null
+    }
+  ],
+  "fixture_origin": "PLACEHOLDER — NOT A REAL PROVIDER CAPTURE. Replace with output captured from a live provider run before publishing any metric. See benchmark/README.md.",
+  "is_placeholder": true,
+  "captured_at": null,
+  "capture_run_id": null
+}

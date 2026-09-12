@@ -1,0 +1,56 @@
+{
+  "version": "dataset-v1",
+  "category": "rental_deposit",
+  "locale": "Rwanda",
+  "languages": ["rw", "en", "fr"],
+  "description": "Switch-aware mediation evaluation set. Every scenario is a two-party rental deposit dispute recorded as two separate accounts. Audio is consented, participant-recorded or acted from consented scripts; no scraped courtroom material.",
+  "splits": {
+    "dev": "Development and inspection. Tuning is allowed here.",
+    "holdout": "Never used for tuning. All headline numbers come from this split."
+  },
+  "consent": {
+    "policy": "Every clip carries a recorded consent flag and a documented provenance note. Speakers may withdraw, which removes the clip and its derived annotations.",
+    "pii": "Names in reference transcripts are pseudonymised (Party A / Party B / neutral given names)."
+  },
+  "difficulty_axes": [
+    "intra-sentence code-switching (rw -> en -> fr)",
+    "numeric values expressed as words in Kinyarwanda",
+    "negation carried across a language switch",
+    "reported speech (A quoting B)",
+    "speaker self-correction",
+    "background noise / phone-quality audio"
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "WZ_DEMO_001",
+      "split": "dev",
+      "category": "rental_deposit",
+      "description": "Demo case. Deposit amount disagreement (150,000 vs 100,000 RWF), a denied refund promise carried across a code-switch, damage responsibility contested, repair invoice mentioned but never provided.",
+      "clips": [
+        {
+          "clip_id": "WZ_DEMO_001_A",
+          "party_role": "PARTY_A",
+          "audio_path": "fixtures/audio/WZ_DEMO_001_A.wav",
+          "fixture_key": "WZ_DEMO_001_A",
+          "language_profile": "rw_en_fr_mixed",
+          "duration_ms": 41000,
+          "consent_recorded": true
+        },
+        {
+          "clip_id": "WZ_DEMO_001_B",
+          "party_role": "PARTY_B",
+          "audio_path": "fixtures/audio/WZ_DEMO_001_B.wav",
+          "fixture_key": "WZ_DEMO_001_B",
+          "language_profile": "rw_en_mixed",
+          "duration_ms": 37000,
+          "consent_recorded": true
+        }
+      ]
+    }
+  ],
+  "planned_scenarios": {
+    "dev": 5,
+    "holdout": 10,
+    "note": "WZ_DEMO_001 is the reference implementation of the annotation contract. Remaining scenarios follow the same schema; recording and annotation are a data-collection task, not a code task."
+  }
+}

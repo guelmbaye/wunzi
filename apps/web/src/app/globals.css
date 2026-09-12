@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+
+    /* Named families with a real fallback stack: if the webfont never
+       arrives, the interface still sets correctly. */
+    --font-public-sans: 'Public Sans', ui-sans-serif, system-ui, 'Segoe UI',
+      Roboto, Helvetica, Arial, sans-serif;
+    --font-newsreader: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased;
+    font-feature-settings: 'ss01', 'cv05';
+  }
+
+  /* Amounts sit in columns beside each other constantly — 150,000 above
+     100,000 only reads as a difference if the digits line up. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ink ring-offset-2 ring-offset-paper;
+  }
+
+  ::selection {
+    @apply bg-ink text-paper;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border border-rule bg-paper-raised;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-card px-4 py-2.5
+           text-sm font-medium transition-colors disabled:pointer-events-none
+           disabled:opacity-45;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink text-paper hover:bg-ink-soft;
+  }
+
+  .btn-secondary {
+    @apply btn border border-rule-strong bg-paper-raised text-ink hover:bg-paper-sunken;
+  }
+
+  .btn-quiet {
+    @apply btn text-ink-soft hover:bg-paper-sunken hover:text-ink;
+  }
+
+  .field {
+    @apply w-full rounded-card border border-rule-strong bg-paper-raised px-3 py-2.5
+           text-sm text-ink placeholder:text-ink-faint focus:border-ink;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+
+  /* The spine from the WUNZI mark: the vertical rule that separates the two
+     accounts and never lets them merge. */
+  .spine {
+    @apply relative before:absolute before:inset-y-0 before:left-1/2 before:w-px
+           before:-translate-x-1/2 before:bg-rule;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
