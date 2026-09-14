@@ -86,11 +86,9 @@ export function VerificationCard({ field }: { field: CriticalField }) {
 
         <p className="mt-3 text-base leading-relaxed">{field.prompt_text}</p>
 
-        {field.audio && (
+        {field.has_audio_source && (
           <AudioSourceButton
-            recordingId={field.audio.recording_id}
-            startMs={field.audio.start_ms}
-            endMs={field.audio.end_ms}
+            claimId={field.claim_id}
             label="Hear what was recorded"
             className="-ml-2 mt-2"
           />

@@ -8,6 +8,7 @@ import { TranscriptViewer } from '@/components/TranscriptViewer';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { PARTY } from '@/lib/states';
 import { claimsUrl, recordingsUrl } from '@/lib/urls';
+import { toClaim, toRecording } from '@/lib/mappers';
 import type { Claim, PartyRole, Recording } from '@/lib/types';
 
 const TERMINAL: Recording['processing_status'][] = ['CLAIMS_READY', 'FAILED'];
@@ -54,16 +55,18 @@ export function PartyIntake({
     const response = await fetch(recordingsUrl(caseId), { cache: 'no-store' });
     if (!response.ok) return;
 
+    // Same mappers as the server path. Parsing the envelope by hand here is how
+    // the two sides drift the moment a Laravel resource changes.
     const body = await response.json();
-    const list: Recording[] = body.data ?? body;
-    const mine = list.find((item) => item.party_id === partyId) ?? null;
+    const recordings: Recording[] = (body.data ?? []).map(toRecording);
+    const mine = recordings.find((item) => item.party_id === partyId) ?? null;
     setRecording(mine);
 
     if (mine && TERMINAL.includes(mine.processing_status)) {
       const claimsResponse = await fetch(claimsUrl(caseId, role), { cache: 'no-store' });
       if (claimsResponse.ok) {
         const claimsBody = await claimsResponse.json();
-        setClaims(claimsBody.data ?? claimsBody);
+        setClaims((claimsBody.data ?? []).map(toClaim));
       }
       // Refresh the stepper and the pending-verification count in the layout.
       router.refresh();

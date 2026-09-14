@@ -50,13 +50,33 @@ export interface MediationCase {
   title: string | null;
   status: CaseStatus;
   parties: Party[];
-  counts?: {
+  counts: {
     claims: number;
     issues: number;
+    /** Comes from Laravel's `meta`, not the resource: it is a query, not a column. */
     pending_critical_fields: number;
   };
   created_at: string;
   updated_at: string;
+}
+
+/** Laravel's own overview shape. Richer than a claim dump, so kept as-is. */
+export interface CaseOverview {
+  case: MediationCase;
+  progress: {
+    party_a: boolean;
+    party_b: boolean;
+    verification: boolean;
+    issue_map: boolean;
+    packet: boolean;
+  };
+  summary: {
+    agreed: number;
+    disputed: number;
+    missing: number;
+    unverified: number;
+    fields_needing_verification: number;
+  };
 }
 
 export interface TranscriptSegment {
@@ -72,7 +92,7 @@ export interface TranscriptSegment {
 
 export interface TranscriptRun {
   id: string;
-  provider: AsrProvider;
+  provider: string;
   model: string | null;
   source_mode: 'live' | 'fixture';
   fixture_origin: string | null;
@@ -88,6 +108,7 @@ export interface Recording {
   processing_status: ProcessingStatus;
   failure_reason: string | null;
   consent_recorded: boolean;
+  /** The primary run only. Benchmark runs exist but are never the transcript. */
   transcript_run: TranscriptRun | null;
 }
 
@@ -118,7 +139,12 @@ export interface Claim {
   is_superseded: boolean;
   /** Neutral rendering built server-side: "Party A states that…" */
   statement: string;
-  audio: { recording_id: string; start_ms: number; end_ms: number } | null;
+  /**
+   * Whether the claim can be traced back to audio. The span itself is fetched
+   * on demand from /claims/{id}/audio-source — a list of forty claims should
+   * not carry forty signed URLs that expire in ten minutes.
+   */
+  has_audio_source: boolean;
 }
 
 export interface CriticalField {
@@ -134,29 +160,30 @@ export interface CriticalField {
   /** Non-suggestive by construction. Rendered verbatim, never rewritten here. */
   prompt_text: string | null;
   claim_statement: string;
-  audio: { recording_id: string; start_ms: number; end_ms: number } | null;
+  has_audio_source: boolean;
 }
 
 export interface Issue {
   id: string;
   canonical_type: string;
+  /** Display label, derived client-side: Laravel sends the canonical type only. */
   label: string;
   status: IssueStatus;
   criticality: 'HIGH' | 'MEDIUM' | 'LOW';
   summary: string | null;
+  /** Laravel names this `reason`; the column is `classification_reason`. */
   classification_reason: string | null;
   party_a_value: CanonicalValue | null;
   party_b_value: CanonicalValue | null;
-  party_a_statement: string | null;
-  party_b_statement: string | null;
 }
 
 export interface EvidenceReference {
   id: string;
   type: string;
   availability: 'AVAILABLE' | 'MENTIONED_NOT_PROVIDED' | 'MISSING' | 'DISPUTED';
+  /** Laravel phrases this: "mentioned, not provided" is never "does not exist". */
+  label: string | null;
   description: string | null;
-  mentioned_by_role: PartyRole | null;
 }
 
 export interface PacketIssueEntry {

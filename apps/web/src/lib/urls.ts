@@ -10,17 +10,15 @@
  * directly: the browser never learns the API's address.
  */
 
-export function audioSourceUrl(
-  recordingId: string,
-  startMs: number,
-  endMs: number,
-): string {
-  const params = new URLSearchParams({
-    start_ms: String(startMs),
-    end_ms: String(endMs),
-  });
-
-  return `/api/laravel/recordings/${recordingId}/stream?${params}`;
+/**
+ * Provenance for one claim: a signed URL plus the span it came from.
+ *
+ * Fetched on demand rather than embedded in a list. The URL expires in ten
+ * minutes, so a list that carried one per claim would be handing out mostly
+ * dead links — and live grants to private mediation audio besides.
+ */
+export function claimAudioSourceUrl(claimId: string): string {
+  return `/api/laravel/claims/${claimId}/audio-source`;
 }
 
 /** Upload target for one party's account. Recordings belong to a party. */

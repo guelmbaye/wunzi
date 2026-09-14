@@ -2,6 +2,7 @@ import 'server-only';
 
 import type {
   BenchmarkRun,
+  CaseOverview,
   CasePacket,
   Claim,
   CriticalField,
@@ -11,21 +12,23 @@ import type {
   Recording,
   SameAudioComparison,
 } from './types';
+import { count, list, record, toCase, toClaim, toCriticalField, toEvidence, toIssue, toRecording } from './mappers';
 
 /**
  * Server-only client for the Laravel System of Record.
  *
  * The token never reaches the browser: every read happens in a Server
- * Component, and every write goes through a Server Action. A mediation case
- * contains two people's accounts of a dispute, so shipping a bearer token to
- * the client to save a hop is not a trade worth making.
+ * Component, every write in a Server Action.
+ *
+ * Every response is mapped EXPLICITLY below. This file used to unwrap with
+ * `json?.data ?? json`, which looked tidy and was wrong twice over: it silently
+ * discarded sibling keys — Laravel returns `{data, evidence, meta}` for the
+ * issue graph, so `evidence` vanished — and it hid every field-name difference
+ * until a Server Component crashed on `undefined` and white-screened the route.
+ * Laravel's resources are the contract; the mappers below are the only place
+ * allowed to know both vocabularies.
  */
 
-/*
- * `api` is the docker compose service name, which only resolves inside the
- * compose network. Running `npm run dev` on a host, it does not — so the
- * default is localhost and compose overrides it explicitly.
- */
 const BASE_URL = process.env.LARAVEL_API_URL ?? 'http://localhost:8000';
 const TOKEN = process.env.WUNZI_API_TOKEN ?? '';
 
@@ -40,7 +43,6 @@ export class ApiError extends Error {
     this.name = 'ApiError';
   }
 
-  /** The System of Record refused a transition; that refusal is the answer. */
   get isRuleViolation(): boolean {
     return this.status === 422;
   }
@@ -58,22 +60,15 @@ export class ApiError extends Error {
     return this.status === 401 || this.status === 403;
   }
 
-  /**
-   * What a developer should actually do about it.
-   *
-   * A screen that says only "the service is not responding" is useless: it
-   * cannot distinguish a stopped API from a wrong hostname from a missing
-   * token, and those need three different fixes.
-   */
   get remedy(): string {
     if (this.isUnreachable) {
-      return `Nothing is listening at ${BASE_URL}. Start the API (\`php artisan serve --port=8000\`) or set LARAVEL_API_URL in apps/web/.env.local — the default only resolves inside docker compose.`;
+      return `Nothing is listening at ${BASE_URL}. Start the API, or set LARAVEL_API_URL — the compose default only resolves inside the compose network.`;
     }
 
     if (this.isUnauthenticated) {
       return TOKEN
-        ? 'The API rejected the token. Mint a fresh one with `php artisan wunzi:token`.'
-        : 'No API token is set. Run `php artisan wunzi:token` and put the result in WUNZI_API_TOKEN in apps/web/.env.local.';
+        ? 'The API rejected the token. Mint a fresh one with `php artisan wunzi:token --revoke`.'
+        : 'No API token is set. Run `php artisan wunzi:token` and put the result in WUNZI_API_TOKEN.';
     }
 
     if (this.isUnavailable) {
@@ -84,15 +79,17 @@ export class ApiError extends Error {
   }
 }
 
+type Envelope = Record<string, unknown>;
+
 type FetchOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
-  /** Live case state is never cached; benchmark results are immutable. */
   revalidate?: number | false;
   tags?: string[];
 };
 
-async function call<T>(path: string, options: FetchOptions = {}): Promise<T> {
+/** Returns the raw envelope. Unwrapping is each mapper's job, not this one's. */
+async function call(path: string, options: FetchOptions = {}): Promise<Envelope> {
   const { method = 'GET', body, revalidate = 0, tags } = options;
 
   let response: Response;
@@ -110,9 +107,6 @@ async function call<T>(path: string, options: FetchOptions = {}): Promise<T> {
       cache: revalidate === 0 ? 'no-store' : undefined,
     });
   } catch (cause) {
-    // fetch throws rather than returning a response when the host does not
-    // resolve or refuses the connection. Without this, the failure arrives as a
-    // bare TypeError and every screen reports the same unhelpful thing.
     throw new ApiError(
       `Could not reach the API at ${BASE_URL}: ${cause instanceof Error ? cause.message : 'connection failed'}`,
       0,
@@ -127,19 +121,12 @@ async function call<T>(path: string, options: FetchOptions = {}): Promise<T> {
     } catch {
       payload = await response.text();
     }
-
-    throw new ApiError(
-      messageFor(payload, response.status, path),
-      response.status,
-      path,
-      payload,
-    );
+    throw new ApiError(messageFor(payload, response.status, path), response.status, path, payload);
   }
 
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) return {};
 
-  const json = (await response.json()) as { data?: T } & T;
-  return (json?.data ?? json) as T;
+  return (await response.json()) as Envelope;
 }
 
 function messageFor(payload: unknown, status: number, path: string): string {
@@ -149,76 +136,124 @@ function messageFor(payload: unknown, status: number, path: string): string {
   return `Request to ${path} failed with ${status}.`;
 }
 
-// ── cases ──────────────────────────────────────────────────────────────────
-export const api = {
-  listCases: () => call<MediationCase[]>('/cases'),
+// ── endpoints ──────────────────────────────────────────────────────────────
 
-  createCase: (input: {
+export const api = {
+  async listCases(): Promise<MediationCase[]> {
+    const envelope = await call('/cases');
+    return list(envelope.data).map((raw) => toCase(raw));
+  },
+
+  async createCase(input: {
     category: string;
     title?: string;
     party_a_name: string;
     party_b_name: string;
-  }) => call<MediationCase>('/cases', { method: 'POST', body: input }),
+  }): Promise<MediationCase> {
+    const envelope = await call('/cases', { method: 'POST', body: input });
+    return toCase(record(envelope.data));
+  },
 
-  getCase: (id: string) => call<MediationCase>(`/cases/${id}`),
+  async getCase(id: string): Promise<MediationCase> {
+    const envelope = await call(`/cases/${id}`);
+    return toCase(record(envelope.data), count(record(envelope.meta).pending_verifications));
+  },
 
-  getOverview: (id: string) =>
-    call<{
-      case: MediationCase;
-      recordings: Recording[];
-      claims: Claim[];
-      pending_critical_fields: number;
-    }>(`/cases/${id}/overview`),
+  /** `{case, progress, summary}` — Laravel's own shape, kept rather than reinvented. */
+  async getOverview(id: string): Promise<CaseOverview> {
+    const envelope = await call(`/cases/${id}/overview`);
+    const summary = record(envelope.summary);
+    const progress = record(envelope.progress);
 
-  // ── capture ──────────────────────────────────────────────────────────────
-  listRecordings: (caseId: string) => call<Recording[]>(`/cases/${caseId}/recordings`),
+    return {
+      case: toCase(record(envelope.case), count(summary.fields_needing_verification)),
+      progress: {
+        party_a: Boolean(progress.party_a),
+        party_b: Boolean(progress.party_b),
+        verification: Boolean(progress.verification),
+        issue_map: Boolean(progress.issue_map),
+        packet: Boolean(progress.packet),
+      },
+      summary: {
+        agreed: count(summary.agreed),
+        disputed: count(summary.disputed),
+        missing: count(summary.missing),
+        unverified: count(summary.unverified),
+        fields_needing_verification: count(summary.fields_needing_verification),
+      },
+    };
+  },
 
-  listClaims: (caseId: string, partyRole?: string) =>
-    call<Claim[]>(`/cases/${caseId}/claims${partyRole ? `?party_role=${partyRole}` : ''}`),
+  async listRecordings(caseId: string): Promise<Recording[]> {
+    const envelope = await call(`/cases/${caseId}/recordings`);
+    return list(envelope.data).map(toRecording);
+  },
 
-  // ── verification ─────────────────────────────────────────────────────────
-  listCriticalFields: (caseId: string) =>
-    call<CriticalField[]>(`/cases/${caseId}/verifications`),
+  async listClaims(caseId: string, partyRole?: string): Promise<Claim[]> {
+    const envelope = await call(
+      `/cases/${caseId}/claims${partyRole ? `?party_role=${partyRole}` : ''}`,
+    );
+    return list(envelope.data).map(toClaim);
+  },
 
-  resolveCriticalField: (
-    fieldId: string,
-    input: { resolution: 'CONFIRMED' | 'CORRECTED' | 'UNRESOLVED'; corrected_value?: string },
-  ) =>
-    call<CriticalField>(`/verifications/${fieldId}/resolve`, {
-      method: 'POST',
-      body: input,
-    }),
+  async listCriticalFields(caseId: string): Promise<CriticalField[]> {
+    const envelope = await call(`/cases/${caseId}/verifications`);
+    return list(envelope.data).map(toCriticalField);
+  },
 
-  // ── issue graph ──────────────────────────────────────────────────────────
-  listIssues: (caseId: string) =>
-    call<{ issues: Issue[]; evidence: EvidenceReference[] }>(`/cases/${caseId}/issues`),
+  /**
+   * Laravel groups issues by status and puts evidence beside `data`, not inside
+   * it. Flattened here, ordered by the four states.
+   */
+  async listIssues(caseId: string): Promise<{ issues: Issue[]; evidence: EvidenceReference[] }> {
+    const envelope = await call(`/cases/${caseId}/issues`);
+    const grouped = record(envelope.data);
 
-  buildIssueGraph: (caseId: string) =>
-    call<{ queued: boolean }>(`/cases/${caseId}/build-issues`, { method: 'POST' }),
+    const issues = (['DISPUTED', 'UNVERIFIED', 'MISSING', 'AGREED'] as const).flatMap((status) =>
+      list(grouped[status]).map(toIssue),
+    );
 
-  // ── packet ───────────────────────────────────────────────────────────────
-  getPacket: (caseId: string) => call<CasePacket | null>(`/cases/${caseId}/packet`),
+    return { issues, evidence: list(envelope.evidence).map(toEvidence) };
+  },
 
-  createPacket: (caseId: string) =>
-    call<CasePacket>(`/cases/${caseId}/create-packet`, { method: 'POST' }),
+  async buildIssueGraph(caseId: string): Promise<void> {
+    await call(`/cases/${caseId}/build-issues`, { method: 'POST' });
+  },
+
+  async getPacket(caseId: string): Promise<CasePacket | null> {
+    const envelope = await call(`/cases/${caseId}/packet`);
+    const data = record(envelope.data);
+    if (!data.id) return null;
+
+    return {
+      id: String(data.id),
+      version: count(data.version),
+      generated_at: String(data.generated_at ?? ''),
+      payload: record(data.payload) as CasePacket['payload'],
+    };
+  },
+
+  async createPacket(caseId: string): Promise<void> {
+    await call(`/cases/${caseId}/create-packet`, { method: 'POST' });
+  },
 
   // ── benchmark ────────────────────────────────────────────────────────────
-  listBenchmarkRuns: () => call<BenchmarkRun[]>('/benchmark-runs', { revalidate: 30 }),
+  async listBenchmarkRuns(): Promise<BenchmarkRun[]> {
+    const envelope = await call('/benchmark-runs', { revalidate: 30 });
+    return list(envelope.data) as unknown as BenchmarkRun[];
+  },
 
-  getBenchmarkRun: (runId: string) =>
-    call<BenchmarkRun>(`/benchmark-runs/${runId}`, { revalidate: 30 }),
+  async getBenchmarkRun(runId: string): Promise<BenchmarkRun> {
+    const envelope = await call(`/benchmark-runs/${runId}`, { revalidate: 30 });
+    return record(envelope.data) as unknown as BenchmarkRun;
+  },
 
-  getSameAudioComparison: (runId: string, clipId?: string) =>
-    call<SameAudioComparison>(
+  async getSameAudioComparison(runId: string, clipId?: string): Promise<SameAudioComparison> {
+    const envelope = await call(
       `/benchmark-runs/${runId}/same-audio${clipId ? `?clip_id=${clipId}` : ''}`,
       { revalidate: 30 },
-    ),
-
-  /** Boundaries the API declares about itself, rendered on /responsible-ai. */
-  getResponsibleAi: () =>
-    call<{
-      boundaries: Record<string, boolean>;
-      approved_framings: string[];
-      blocked_language: string[];
-    }>('/responsible-ai', { revalidate: 3600 }),
+    );
+    const data = record(envelope.data);
+    return (Object.keys(data).length ? data : envelope) as unknown as SameAudioComparison;
+  },
 };

@@ -47,6 +47,29 @@ export const ISSUE_STATE = {
   },
 } as const satisfies Record<IssueStatus, unknown>;
 
+/**
+ * Display labels for the canonical ontology. Laravel sends the canonical type
+ * and nothing else — a human label is presentation, and putting it in the API
+ * would make the same string live in two places.
+ *
+ * Mirrors HUMAN_LABELS in app/intelligence/issue_graph.py.
+ */
+export const ISSUE_LABEL: Record<string, string> = {
+  deposit_exists: 'Deposit existence',
+  deposit_amount: 'Deposit amount',
+  deposit_payment_date: 'Deposit payment date',
+  tenancy_end_date: 'Tenancy end date',
+  property_return_date: 'Property return date',
+  damage_exists: 'Damage',
+  damage_responsibility: 'Damage responsibility',
+  repair_cost: 'Repair cost',
+  repair_evidence: 'Repair evidence',
+  refund_commitment: 'Full refund commitment',
+  refund_amount: 'Refund amount',
+  refund_deadline: 'Refund deadline',
+  requested_outcome: 'Requested outcome',
+};
+
 export const ISSUE_ORDER: IssueStatus[] = ['DISPUTED', 'UNVERIFIED', 'MISSING', 'AGREED'];
 
 export const PARTY = {

@@ -75,18 +75,8 @@ function IssueRow({ issue }: { issue: Issue }) {
 
       {twoSided ? (
         <div className="spine mt-3 grid grid-cols-2 gap-px px-5 pb-4">
-          <Side
-            role="PARTY_A"
-            value={valueA}
-            statement={issue.party_a_statement}
-            align="left"
-          />
-          <Side
-            role="PARTY_B"
-            value={valueB}
-            statement={issue.party_b_statement}
-            align="right"
-          />
+          <Side role="PARTY_A" value={valueA} align="left" />
+          <Side role="PARTY_B" value={valueB} align="right" />
         </div>
       ) : (
         <div className="px-5 pb-4 pt-2">
@@ -108,12 +98,10 @@ function IssueRow({ issue }: { issue: Issue }) {
 function Side({
   role,
   value,
-  statement,
   align,
 }: {
   role: keyof typeof PARTY;
   value: string | null;
-  statement: string | null;
   align: 'left' | 'right';
 }) {
   const party = PARTY[role];
@@ -128,9 +116,6 @@ function Side({
         <p className="mt-1 text-sm text-ink-faint">No information</p>
       )}
 
-      {statement && (
-        <p className="mt-1.5 text-micro leading-relaxed text-ink-soft">{statement}</p>
-      )}
     </div>
   );
 }
@@ -148,13 +133,10 @@ function EvidenceList({ evidence }: { evidence: EvidenceReference[] }) {
           >
             <span className="text-sm">{sentenceCase(item.type)}</span>
             <span className="text-micro text-ink-soft">
-              {/* "Mentioned, not provided" is not "does not exist", and the
-                  wording keeps that difference. */}
-              {item.availability === 'MENTIONED_NOT_PROVIDED'
-                ? 'Mentioned, not provided'
-                : item.availability === 'AVAILABLE'
-                  ? 'Provided'
-                  : 'Not provided'}
+              {/* Laravel phrases this: "mentioned, not provided" never becomes
+                  "does not exist". Re-deriving it here would duplicate the rule
+                  in a place nobody would think to check. */}
+              {item.label ?? sentenceCase(item.availability)}
             </span>
           </li>
         ))}

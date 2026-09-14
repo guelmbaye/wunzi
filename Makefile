@@ -2,7 +2,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 
 .PHONY: help up down logs install migrate fresh seed demo test test-api test-intelligence \
-        test-web web-dev web-build check-routes check-migrations benchmark benchmark-afriswitch benchmark-ablation capture lint
+        test-web web-dev web-build check-routes check-migrations check-payloads benchmark benchmark-afriswitch benchmark-ablation capture lint
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "\033[36m%-22s\033[0m %s\n",$$1,$$2}'
@@ -41,7 +41,10 @@ check-routes: ## Verify every HTTP boundary agrees on its paths
 check-migrations: ## Catch PostgreSQL-only migration ordering hazards
 	python3 scripts/check_migrations.py
 
-test: check-routes check-migrations test-api test-intelligence test-web ## Run every suite
+check-payloads: ## Verify the frontend mappers read fields Laravel actually emits
+	python3 scripts/check_payloads.py
+
+test: check-routes check-migrations check-payloads test-api test-intelligence test-web ## Run every suite
 
 test-api:
 	$(COMPOSE) exec api php artisan test

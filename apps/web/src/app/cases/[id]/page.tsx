@@ -1,24 +1,38 @@
 import Link from 'next/link';
 
-import { IssueSummary } from '@/components/IssueMap';
 import { Count } from '@/components/StateBadge';
 import { api } from '@/lib/api';
-import { formatDuration, sentenceCase } from '@/lib/states';
+import { ISSUE_STATE, sentenceCase } from '@/lib/states';
+import type { IssueStatus } from '@/lib/types';
 
 export const metadata = { title: 'Overview' };
 
+/**
+ * Case overview.
+ *
+ * Reads Laravel's own `{case, progress, summary}` shape rather than a second
+ * one invented here. The API already counts the four mediation states and the
+ * pending verifications in a single query; recomputing them from a claim dump
+ * would be slower and would let the two counts drift apart.
+ */
 export default async function CaseOverviewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [overview, graph] = await Promise.all([
-    api.getOverview(id),
-    api.listIssues(id).catch(() => ({ issues: [], evidence: [] })),
-  ]);
+  const overview = await api.getOverview(id);
 
-  const pending = overview.pending_critical_fields;
+  const { summary, progress } = overview;
+  const pending = summary.fields_needing_verification;
+  const hasIssues = summary.agreed + summary.disputed + summary.missing + summary.unverified > 0;
+
+  const counts: { status: IssueStatus; value: number }[] = [
+    { status: 'DISPUTED', value: summary.disputed },
+    { status: 'UNVERIFIED', value: summary.unverified },
+    { status: 'MISSING', value: summary.missing },
+    { status: 'AGREED', value: summary.agreed },
+  ];
 
   return (
     <div className="space-y-10">
@@ -39,9 +53,20 @@ export default async function CaseOverviewPage({
 
       <section>
         <h2 className="mb-3 text-sm font-medium">Issue map</h2>
-        {graph.issues.length > 0 ? (
+
+        {hasIssues ? (
           <>
-            <IssueSummary issues={graph.issues} />
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {counts.map(({ status, value }) => (
+                <div
+                  key={status}
+                  className={`rounded-card border p-4 ${ISSUE_STATE[status].panel}`}
+                >
+                  <dt className="text-micro text-ink-soft">{ISSUE_STATE[status].label}</dt>
+                  <dd className="tabular mt-1 text-2xl">{value}</dd>
+                </div>
+              ))}
+            </dl>
             <Link
               href={`/cases/${id}/issues`}
               className="mt-3 inline-block text-sm text-ink-soft hover:text-ink"
@@ -60,8 +85,7 @@ export default async function CaseOverviewPage({
         <h2 className="mb-3 text-sm font-medium">Accounts</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {overview.case.parties.map((party) => {
-            const recordings = overview.recordings.filter((r) => r.party_id === party.id);
-            const claims = overview.claims.filter((c) => c.party_role === party.role);
+            const captured = party.role === 'PARTY_A' ? progress.party_a : progress.party_b;
             const href = `/cases/${id}/${party.role === 'PARTY_A' ? 'party-a' : 'party-b'}`;
 
             return (
@@ -82,24 +106,9 @@ export default async function CaseOverviewPage({
                   </span>
                 </div>
 
-                {recordings.length === 0 ? (
-                  <p className="mt-3 text-sm text-ink-faint">Not recorded yet</p>
-                ) : (
-                  <p className="mt-3 text-sm text-ink-soft">
-                    <span className="tabular">{claims.length}</span>{' '}
-                    {claims.length === 1 ? 'claim' : 'claims'} ·{' '}
-                    <span className="tabular">
-                      {formatDuration(recordings[0].duration_ms)}
-                    </span>{' '}
-                    recorded
-                  </p>
-                )}
-
-                {recordings.some((r) => r.processing_status === 'FAILED') && (
-                  <p className="mt-2 text-micro text-pending-ink">
-                    Transcription failed — open to retry
-                  </p>
-                )}
+                <p className="mt-3 text-sm text-ink-soft">
+                  {captured ? 'Account captured' : 'Not recorded yet'}
+                </p>
               </Link>
             );
           })}
@@ -108,15 +117,27 @@ export default async function CaseOverviewPage({
 
       <section>
         <h2 className="mb-3 text-sm font-medium">Case</h2>
-        <p className="card p-5 text-sm text-ink-soft">
-          {overview.case.status === 'READY'
-            ? 'The mediation case is ready.'
-            : 'The mediation case can be created once the issue map is built and every critical value is settled.'}{' '}
-          <Link href={`/cases/${id}/packet`} className="text-ink underline underline-offset-2">
-            {sentenceCase('open case packet')}
+        <div className="card p-5">
+          <p className="text-sm text-ink-soft">
+            {progress.packet
+              ? 'The mediation case has been created.'
+              : progress.verification && progress.issue_map
+                ? 'Everything critical is settled. The mediation case can be created.'
+                : 'The mediation case can be created once the issue map is built and every critical value is settled.'}
+          </p>
+          <Link
+            href={`/cases/${id}/packet`}
+            className="mt-3 inline-block text-sm text-ink underline underline-offset-2"
+          >
+            {progress.packet ? 'Open the case packet' : 'Go to the case packet'}
           </Link>
-        </p>
+        </div>
       </section>
+
+      <p className="text-micro text-ink-faint">
+        {sentenceCase(overview.case.category)} ·{' '}
+        <span className="tabular">{overview.case.public_reference}</span>
+      </p>
     </div>
   );
 }

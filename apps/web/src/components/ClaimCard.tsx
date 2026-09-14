@@ -72,13 +72,8 @@ export function ClaimCard({ claim }: { claim: Claim }) {
             {VERIFICATION_LABEL[claim.verification_status]}
           </span>
 
-          {claim.audio && (
-            <AudioSourceButton
-              recordingId={claim.audio.recording_id}
-              startMs={claim.audio.start_ms}
-              endMs={claim.audio.end_ms}
-              className="-ml-2"
-            />
+          {claim.has_audio_source && (
+            <AudioSourceButton claimId={claim.id} className="-ml-2" />
           )}
         </div>
       </div>
