@@ -548,7 +548,11 @@ services:
 
   # ─── MinIO — audio de médiation ───────────────────────────────
   minio:
-    image: minio/minio:latest
+    # quay.io, pas Docker Hub : MinIO y a retiré minio/minio et minio/mc en
+    # septembre 2026 — les dépôts renvoient 404, pas seulement les tags.
+    # Versions épinglées : une stack de production ne change pas de binaire
+    # au prochain `up --build` sans qu'on l'ait demandé.
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: wunzi-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -565,7 +569,7 @@ services:
 
   # ─── Création du bucket, en privé ─────────────────────────────
   createbuckets:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     container_name: wunzi-createbuckets
     depends_on: [minio]
     entrypoint: >
@@ -1137,6 +1141,47 @@ grep -c "^INTELLIGENCE_TIMEOUT=" .env                      # doit être 1, pas 2
 ```
 
 phpdotenv garde la **première** définition : un doublon avec une ancienne valeur gagne silencieusement.
+
+## `pull access denied for minio/mc` au premier `up --build`
+
+Ce n'est pas un problème d'authentification, malgré le message. **MinIO a retiré
+`minio/minio` et `minio/mc` du Docker Hub en septembre 2026** — les dépôts
+eux-mêmes renvoient 404, pas seulement les tags épinglés :
+
+```bash
+curl -s https://hub.docker.com/v2/repositories/minio/mc/
+# {"message":"object not found","errinfo":{}}
+```
+
+Le message Docker couvre à la fois « dépôt inexistant » et « non authentifié »,
+ce qui envoie chercher des identifiants pour rien. Et comme une seule image en
+échec interrompt les cinq autres tirages, toute la stack s'arrête.
+
+quay.io est le registre officiel de MinIO et sert les mêmes releases sous les
+mêmes tags. Le `docker-compose.prod.yml` de ce guide y pointe déjà. Si vous
+partez d'une ancienne copie :
+
+```yaml
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+  createbuckets:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+```
+
+Vérifier avant de relancer la stack entière :
+
+```bash
+docker pull quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+docker pull quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+```
+
+Les deux se tirent anonymement, sans `docker login`.
+
+> **À surveiller.** MinIO a archivé son édition communautaire et retire
+> progressivement sa distribution publique. quay.io fonctionne aujourd'hui ;
+> rien ne garantit que ce soit permanent. Si ça bouge encore, WUNZI n'utilise
+> MinIO que comme stockage S3 privé pour l'audio — n'importe quel serveur
+> compatible S3 convient, et seule la variable `AWS_ENDPOINT` change.
 
 ## Disque saturé
 
