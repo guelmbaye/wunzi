@@ -181,3 +181,59 @@ async def test_a_clip_queued_every_time_still_raises(monkeypatch):
 
 async def _no_sleep(seconds):
     return None
+
+
+# ── a wrong model name must not cost a run ─────────────────────────────────
+# `whisper-large-v3` is the Hugging Face name; OpenAI's hosted name is
+# `whisper-1`. The wrong one 404s on every call, and a run of two hundred
+# discovered it two hundred times before the preflight checked the model.
+
+
+@pytest.mark.asyncio
+async def test_a_missing_model_is_reported_before_the_run(monkeypatch):
+    from app.asr.whisper import WhisperProvider
+
+    class _Response:
+        status_code = 404
+
+    class _Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def get(self, url, headers=None):
+            return _Response()
+
+    monkeypatch.setattr("httpx.AsyncClient", lambda **kwargs: _Client())
+
+    error = await WhisperProvider(
+        api_key="k", base_url="https://api.openai.com/v1", model="whisper-large-v3"
+    ).verify_model()
+
+    assert error is not None
+    assert "whisper-1" in error, "the message must name the correct model"
+
+
+@pytest.mark.asyncio
+async def test_a_probe_that_cannot_answer_does_not_block_the_run(monkeypatch):
+    # An unverifiable model is not the same as a missing one. A provider with no
+    # models endpoint must not be refused on the strength of a failed probe.
+    from app.asr.whisper import WhisperProvider
+
+    def _explode(**kwargs):
+        raise RuntimeError("no such endpoint")
+
+    monkeypatch.setattr("httpx.AsyncClient", _explode)
+
+    assert await WhisperProvider(api_key="k", base_url="https://x").verify_model() is None
+
+
+@pytest.mark.asyncio
+async def test_a_provider_without_a_probe_returns_none():
+    from app.asr.sahara import SaharaProvider
+
+    # Intron publishes no model listing. Guessing one would reintroduce exactly
+    # the class of fabrication this check exists to catch.
+    assert await SaharaProvider(api_key="k").verify_model() is None

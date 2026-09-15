@@ -79,9 +79,12 @@ Every provider implements `transcribe(audio_uri, config) -> NormalizedTranscript
 No code downstream of the adapter branches on provider identity except benchmark
 labelling. Swapping Sahara for Whisper changes one environment variable.
 
-Provider metadata is never synthesised. If a provider does not report per-segment
-language or confidence, those fields stay `null` — an invented confidence score
-would corrupt the Critical Speech Guard, which reads them.
+Provider metadata is never synthesised. Intron's `file/v1/upload/sync` returns a
+flat transcript with no segments, no timestamps and no confidence; Whisper
+reports one language per request. Those fields stay `null` rather than being
+filled in — an invented confidence score would corrupt the Critical Speech
+Guard, which reads them, and invented segment boundaries would falsify the
+provenance chain every claim is traced through.
 
 A provider failure is recorded as a failure. The system never silently falls back
 to a different model: substitution would make the benchmark meaningless and the

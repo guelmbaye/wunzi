@@ -66,18 +66,33 @@ sponsor.
 ### Sahara (Intron) — primary
 
 **Strengths.** Best published Kinyarwanda accuracy of the models surveyed, by a
-clear margin. Exposes **language spans per segment**, which no other adapter in
-this set does — WUNZI reads those spans to mark code-switch boundaries in the
-transcript view, and the Critical Speech Guard reads per-segment confidence.
-Trained for African language varieties rather than adapted to them.
+clear margin. And decisively for this product: Intron documents language code
+`rw` as **Kinyarwanda-English-French**, flagged as a code-switched language.
+WUNZI's exact trilingual combination is handled as one language rather than as
+three the caller must switch between — no other provider in this set offers that.
 
-**Weaknesses.** Commercial API with per-call cost and a hard external dependency.
-Smaller public track record than Whisper. Availability outside the challenge
-context is unverified by us.
+**Weaknesses.** The `file/v1/upload/sync` endpoint returns a **flat transcript**:
+no segments, no timestamps, no per-segment language, no confidence. Two
+consequences WUNZI absorbs rather than hides:
 
-**Why it is primary.** The published Kinyarwanda gap, plus the per-segment
-metadata that the guard actually consumes. A model that reports no confidence
-forces the guard onto weaker structural signals.
+- the transcript view marks no code-switch boundaries for Sahara, because the
+  API reports none — the switching happens inside the model, not in its output
+- the Critical Speech Guard loses its confidence signal and falls back to
+  structural cues: negation ambiguity, attribution uncertainty, implausible
+  amounts
+
+Also: 120-second cap on the sync endpoint, 30 requests per minute, commercial
+per-call cost, and a smaller public track record than Whisper.
+
+**A fairness note on the benchmark.** The API applies LLM post-processing by
+default, under a `file_category_telehealth` category — medical corrections on a
+rental dispute. Benchmarking that against a raw Whisper transcript would compare
+a pipeline to a model, so WUNZI sends `use_disable_llm_corrections=TRUE` and
+`use_category=file_category_general` for every benchmark call. Leaving the
+default in place would have flattered the sponsor.
+
+**Why it is primary.** The published Kinyarwanda gap, and native trilingual
+code-switch support that matches the product's language profile exactly.
 
 ### Whisper large-v3 (OpenAI) — comparator
 
@@ -85,11 +100,11 @@ forces the guard onto weaker structural signals.
 and French, well documented, easy to reproduce. Including it means the comparison
 cannot be accused of picking weak opponents.
 
-**Weaknesses.** Reports **one language per request, not per segment** — so
-intra-utterance switching is invisible in its output, and WUNZI shows no language
-tags for it rather than inventing them. Known to prefer fluent output, which in
-code-switched speech is the exact pressure that produces translation instead of
-transcription. Lower-resource African languages are far from its training
+**Weaknesses.** Reports **one language per request**, so a caller must commit to
+a single language for an utterance that contains three. Known to prefer fluent
+output, which in code-switched speech is the exact pressure that produces
+translation instead of transcription — the failure Matrix Language Collapse was
+built to detect. Lower-resource African languages are far from its training
 centre of mass.
 
 ### Model B — Gemini-class speech — comparator

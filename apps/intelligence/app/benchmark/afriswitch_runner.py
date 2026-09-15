@@ -143,14 +143,23 @@ class AfriSwitchRunner:
         failures = sum(1 for r in report.results if r.failed)
         failure_rate = failures / len(report.results) if report.results else 0.0
 
-        report.publishable = not placeholder and failure_rate < 0.05
+        # Failures no longer contaminate the error rates — they are excluded
+        # from scoring. What a high failure rate costs is coverage, so the bar
+        # is about how much of the sample was actually measured.
+        report.publishable = not placeholder and failure_rate < 0.20
 
-        if failure_rate >= 0.05:
+        if failure_rate >= 0.20:
             report.publishability_note = (
                 f"{failures} of {len(report.results)} provider calls failed "
-                f"({failure_rate:.0%}). A failed call is scored as an empty "
-                "transcript, so these error rates measure the failures, not the "
-                "models. Check WUNZI_MODE=live and that every provider has an API key."
+                f"({failure_rate:.0%}). Error rates below are computed over the "
+                "successful calls only, but at this rate the surviving sample is "
+                "no longer representative of the corpus."
+            )
+        elif failures:
+            report.publishability_note = (
+                f"{failures} of {len(report.results)} provider calls failed "
+                f"({failure_rate:.0%}) and are excluded from the error rates, which "
+                "are computed over successful calls. Reported for completeness."
             )
         elif placeholder:
             report.publishability_note = (
@@ -259,13 +268,24 @@ class AfriSwitchRunner:
     def _summarise(
         self, rows: list[UtteranceResult], samples: int, code_switched: bool = True
     ) -> dict[str, dict[str, float]]:
+        # A failed call is a failure to measure, not a measurement of zero.
+        # Scoring it as an empty transcript gives a word error rate of 1.0 and
+        # averaging that in inflates every figure — on the first 200-utterance
+        # run, twelve queued clips pushed Sahara's WER from roughly 0.36 to
+        # 0.399, and the number that would have been reported was partly a
+        # measure of the provider's queue.
+        #
+        # Error rates are computed over successful calls; the failure rate is
+        # reported separately and prominently, so nothing is hidden by the
+        # exclusion.
+        scored = [row for row in rows if not row.failed]
         def ci(values: list[float]) -> dict[str, float]:
             point, low, high = bootstrap_ci(values, samples)
             return {"value": round(point, 4), "ci_low": round(low, 4), "ci_high": round(high, 4)}
 
         summary = {
-            "word_error_rate": ci([r.wer for r in rows]),
-            "character_error_rate": ci([r.cer for r in rows]),
+            "word_error_rate": ci([r.wer for r in scored]),
+            "character_error_rate": ci([r.cer for r in scored]),
         }
 
         for metric in CODE_SWITCH_METRICS:
@@ -274,13 +294,15 @@ class AfriSwitchRunner:
             # free marks on the one axis this challenge is about.
             if metric == "switch_point_preservation" and not code_switched:
                 continue
-            summary[metric] = ci([r.code_switch[metric] for r in rows])
+            summary[metric] = ci([r.code_switch[metric] for r in scored])
 
-        latencies = [float(r.latency_ms) for r in rows if r.latency_ms is not None]
+        latencies = [float(r.latency_ms) for r in scored if r.latency_ms is not None]
         if latencies:
             summary["latency_ms"] = ci(latencies)
 
-        summary["sample_count"] = {"value": float(len(rows)), "ci_low": 0.0, "ci_high": 0.0}
+        # The count of what was actually scored, not of what was attempted.
+        summary["sample_count"] = {"value": float(len(scored)), "ci_low": 0.0, "ci_high": 0.0}
+        summary["attempted_count"] = {"value": float(len(rows)), "ci_low": 0.0, "ci_high": 0.0}
         summary["failure_rate"] = ci([1.0 if r.failed else 0.0 for r in rows])
 
         return summary

@@ -1,55 +1,63 @@
-# Correctif — clip en file d'attente
+# Correctif — nom du modèle Whisper
 
-## Le seul échec restant
-
-`FILE_QUEUED` : l'endpoint sync a accepté le fichier mais le worker n'avait pas
-fini. Compté comme transcript vide, donc WER 1,0 — on reproche au modèle une file
-d'attente.
-
-L'upload est maintenant réessayé deux fois avec backoff. Ré-envoyer est moins
-risqué que d'interroger un endpoint de statut dont je n'ai pas vérifié le
-contrat — et j'ai assez inventé d'API aujourd'hui.
-
-## Copier — deux fichiers
+## Ce qui a échoué
 
 ```
-app\asr\sahara.py
-tests\test_sahara_adapter.py
+The model `whisper-large-v3` does not exist or you do not have access to it.
+```
+
+`whisper-large-v3` est le nom **Hugging Face**. Sur l'API OpenAI le modèle
+s'appelle **`whisper-1`**. Encore une valeur par défaut que j'avais écrite sans
+la vérifier, même classe d'erreur que l'URL Intron.
+
+**Vous n'avez rien payé** : un 404 pour modèle inexistant n'est pas facturé.
+
+## Ce qui est ajouté
+
+Le préflight interroge maintenant `/models/{id}` — un GET gratuit — avant de
+lancer quoi que ce soit. Un nom de modèle faux était invisible jusqu'au premier
+appel réel, et un run de 200 le découvrait 200 fois.
+
+Un fournisseur sans endpoint de listing renvoie « non vérifiable » plutôt qu'une
+erreur : un modèle invérifiable n'est pas un modèle absent.
+
+## Copier
+
+```
+app\config.py                        app\asr\base.py
+app\asr\whisper.py                   app\benchmark\afriswitch_runner.py
+app\benchmark\afriswitch_cli.py      tests\test_sahara_adapter.py
+tests\test_fallback_corpus.py        .env.example
 ```
 
 ```powershell
 Get-ChildItem -Recurse -Directory __pycache__ | Remove-Item -Recurse -Force
 ```
 
-## Le run qui compte
+## Lancer
 
 ```powershell
-python -m app.benchmark.afriswitch_cli run --config kinyarwanda --limit 200 --providers sahara --out benchmark\reports
-```
-
-200 énoncés à 30 requêtes/minute ≈ **7 minutes**. Lancez-le et préparez la vidéo
-pendant ce temps.
-
-Avec une clé OpenAI, ajoutez Whisper — deux modèles mesurés valent nettement
-mieux qu'un, et le rubrique demande 3+ :
-
-```powershell
+$env:WUNZI_MODE="live"
 $env:WHISPER_API_KEY="sk-..."
-python -m app.benchmark.afriswitch_cli run --config kinyarwanda --limit 200 --providers sahara,whisper --out benchmark\reports
+
+python -m app.benchmark.afriswitch_cli run --config kinyarwanda --limit 200 --providers whisper --out benchmark\reports
 ```
 
-## À coller dans le rapport de soumission
+Le préflight doit afficher :
 
-Section « Layer B — Results » de `docs\submission\benchmark-report.md`.
-Remplacez le paragraphe « **Pending.** » par le tableau généré.
+```
+  whisper: configured (https://api.openai.com/v1, whisper-1)
+```
 
-Et ajoutez le constat, qui est votre contribution :
+S'il affiche `Cannot run:`, rien n'est dépensé.
 
-> Word error rate barely separates moderate from heavy code-mixing (0.32 vs
-> 0.49), while switch point preservation collapses from 0.80 to 0.17 across the
-> same boundary. A model can hold its error rate and still stop reproducing the
-> speaker's language alternation — which WER cannot express and a mediation case
-> depends on.
+## Coût
 
-Vérifiez le n et les intervalles avant de citer : à n=10 ils sont très larges.
-À n=200 ils se resserrent et la comparaison devient tenable.
+`whisper-1` est facturé à la minute d'audio. Votre échantillon fait ~0,65 h
+(0,20 + 0,25 + 0,20), soit environ **39 minutes** — quelques dizaines de centimes.
+Commencez par `--limit 20` si vous préférez vérifier le coût réel d'abord.
+
+## Et Sahara
+
+**Ne relancez pas Sahara** : USD 0,03 restants ≈ 7 appels. Utilisez `rescore` sur
+le JSON du run à 200 que vous avez déjà.

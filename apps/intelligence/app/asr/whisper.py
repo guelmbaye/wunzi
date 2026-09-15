@@ -33,6 +33,30 @@ class WhisperProvider(AsrProvider):
             },
         )
 
+    async def verify_model(self) -> str | None:
+        """One cheap GET against /models/{id}, which costs nothing."""
+        import httpx
+
+        url = f"{(self.base_url or '').rstrip('/')}/models/{self.model}"
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    url, headers={"Authorization": f"Bearer {self.api_key}"}
+                )
+        except Exception:  # noqa: BLE001 — a probe failure is not a run failure
+            return None
+
+        if response.status_code == 404:
+            return (
+                f"model '{self.model}' does not exist on this API. OpenAI's hosted "
+                "name is 'whisper-1'; 'whisper-large-v3' is the Hugging Face name."
+            )
+        if response.status_code in (401, 403):
+            return "the API key was rejected."
+
+        return None
+
     def _normalize(self, raw: dict[str, Any]) -> NormalizedTranscript:
         segments = [
             NormalizedSegment(

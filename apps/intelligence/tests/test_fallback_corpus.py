@@ -247,10 +247,12 @@ def test_a_fully_failed_run_is_not_publishable():
     assert _failed_report().publishable is False
 
 
-def test_the_note_names_the_failure_rate_and_the_likely_cause():
+def test_the_note_names_the_failure_rate():
     note = _failed_report().publishability_note or ""
     assert "100%" in note
-    assert "WUNZI_MODE=live" in note
+    # At a total failure the surviving sample is not representative, and the
+    # note has to say that rather than quote error rates computed over nothing.
+    assert "no longer representative" in note
 
 
 def test_failures_are_stated_before_the_metric_tables():
@@ -367,3 +369,174 @@ def test_failure_reasons_are_counted_and_reported():
 def test_the_rendered_report_states_the_cause(monkeypatch):
     markdown = render(_failed_report())
     assert "Reported causes" in markdown
+
+
+# ── a failure is not a measurement of zero ─────────────────────────────────
+# A failed call was scored as an empty transcript — word error rate 1.0 — and
+# averaged in with the rest. On the first 200-utterance run, twelve queued clips
+# pushed Sahara's reported WER from roughly 0.36 to 0.399, so the published
+# figure would have been partly a measure of the provider's queue.
+
+
+def _mixed_report(successes: int = 188, failures: int = 12, success_wer: float = 0.361):
+    import asyncio as _asyncio
+
+    from app.benchmark.afriswitch_runner import AfriSwitchReport, AfriSwitchRunner, UtteranceResult
+
+    rows = [
+        UtteranceResult(
+            utterance_id=f"k{index}",
+            provider="sahara",
+            cmi=15.0,
+            cmi_band="moderate",
+            num_switch_points=5,
+            duration=4.0,
+            reference="reference text",
+            hypothesis="" if index >= successes else "hypothesis text",
+            wer=1.0 if index >= successes else success_wer,
+            cer=1.0 if index >= successes else 0.24,
+            code_switch={
+                "matrix_language_collapse_rate": 0.0,
+                "switch_point_preservation": 0.40,
+                "span_language_fidelity": 0.84,
+            },
+            failed=index >= successes,
+            failure_reason="AsrError: FILE_QUEUED" if index >= successes else None,
+        )
+        for index in range(successes + failures)
+    ]
+
+    report = AfriSwitchReport(
+        config="kinyarwanda",
+        providers=["sahara"],
+        utterance_count=len(rows),
+        dataset_notes=[],
+        band_profile={},
+        results=rows,
+    )
+    AfriSwitchRunner()._aggregate(report, 200, True)
+    del _asyncio
+    return report
+
+
+def test_failed_calls_do_not_inflate_the_error_rate():
+    report = _mixed_report()
+    wer = report.overall["sahara"]["word_error_rate"]["value"]
+
+    # 0.399 is what including the failures produced.
+    assert abs(wer - 0.361) < 0.01, f"failures leaked into the mean: {wer}"
+
+
+def test_the_sample_count_reports_what_was_scored():
+    report = _mixed_report()
+    assert report.overall["sahara"]["sample_count"]["value"] == 188
+    assert report.overall["sahara"]["attempted_count"]["value"] == 200
+
+
+def test_the_failure_rate_is_still_reported_in_full():
+    # Excluding failures from the mean must not hide that they happened.
+    report = _mixed_report()
+    assert abs(report.overall["sahara"]["failure_rate"]["value"] - 0.06) < 0.005
+
+
+def test_failure_causes_are_grouped_not_listed_per_occurrence():
+    from app.benchmark.afriswitch_cli import _failure_reasons
+
+    class _Row:
+        def __init__(self, reason):
+            self.failed = True
+            self.failure_reason = reason
+
+    class _Report:
+        results = [
+            _Row(
+                f"AsrError: [sahara] transcription did not complete synchronously "
+                f"(file_id {uuid}, status FILE_QUEUED). Poll the endpoint"
+            )
+            for uuid in (
+                "ab0a08ab-92a8-4731-a479-694c11e2b364",
+                "c8542c1f-f102-4ee6-a9c6-3a2b9cfe351a",
+                "47585cf6-8ad4-409c-9322-a9435fbfc5cd",
+            )
+        ]
+
+    reasons = _failure_reasons(_Report())
+
+    # Twelve identical problems printed as twelve lines differing only by a UUID
+    # buried the one thing worth knowing.
+    assert len(reasons) == 1
+    assert reasons[0][1] == 3
+
+
+# ── rescoring a run that cannot be repeated ────────────────────────────────
+# Provider calls cost money and a benchmark is not repeatable on a spent budget.
+# A methodology fix therefore has to be applicable to a run that has already
+# happened, from the per-utterance results saved alongside it.
+
+
+def test_a_saved_run_can_be_rescored_without_any_api_call(tmp_path, monkeypatch):
+    import json
+    from argparse import Namespace
+
+    from app.benchmark.afriswitch_cli import _rescore
+
+    saved = {
+        "config": "kinyarwanda",
+        "providers": ["sahara"],
+        "utterance_count": 10,
+        "dataset_notes": [],
+        "band_profile": {},
+        "source": "afriswitch",
+        "results": [
+            {
+                "utterance_id": f"kin_{index}",
+                "provider": "sahara",
+                "cmi": 15.0,
+                "cmi_band": "moderate",
+                "num_switch_points": 5,
+                "duration": 4.0,
+                "reference": "reference",
+                "hypothesis": "" if index >= 8 else "hypothesis",
+                "wer": 1.0 if index >= 8 else 0.30,
+                "cer": 1.0 if index >= 8 else 0.20,
+                "code_switch": {
+                    "matrix_language_collapse_rate": 0.0,
+                    "switch_point_preservation": 0.4,
+                    "span_language_fidelity": 0.8,
+                },
+                "failed": index >= 8,
+                "failure_reason": "AsrError: FILE_QUEUED" if index >= 8 else None,
+            }
+            for index in range(10)
+        ],
+    }
+
+    source = tmp_path / "results.json"
+    source.write_text(json.dumps(saved), encoding="utf-8")
+
+    # Any call through the ASR registry would spend credit.
+    def _forbidden(*args, **kwargs):
+        raise AssertionError("rescoring must not reach a provider")
+
+    monkeypatch.setattr("app.asr.registry.get_provider", _forbidden)
+
+    code = _rescore(Namespace(input=str(source), bootstrap=100, out=str(tmp_path)))
+    assert code == 0
+
+    rescored = json.loads(
+        next(tmp_path.glob("*rescored*.json")).read_text(encoding="utf-8")
+    )
+
+    # 0.30 over the eight successes, not 0.44 with the two failures averaged in.
+    wer = rescored["overall"]["sahara"]["word_error_rate"]["value"]
+    assert abs(wer - 0.30) < 0.01
+    assert rescored["overall"]["sahara"]["sample_count"]["value"] == 8
+    assert rescored["overall"]["sahara"]["attempted_count"]["value"] == 10
+
+
+def test_rescore_reports_a_missing_input_rather_than_crashing(tmp_path):
+    from argparse import Namespace
+
+    from app.benchmark.afriswitch_cli import _rescore
+
+    assert _rescore(Namespace(input=str(tmp_path / "nope.json"), bootstrap=10, out=None)) == 2

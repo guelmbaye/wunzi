@@ -51,3 +51,16 @@ class AsrProvider(abc.ABC):
 
     def is_configured(self) -> bool:
         return bool(self.api_key)
+
+    async def verify_model(self) -> str | None:
+        """
+        Confirms the configured model exists, before a run spends anything.
+
+        Returns an error string, or None when the check passed or the provider
+        has no way to answer. A wrong model name is invisible until the first
+        real call, and a run of two hundred discovers it two hundred times.
+
+        Providers that cannot be probed return None rather than guessing — an
+        unverifiable model is not the same as a missing one.
+        """
+        return None

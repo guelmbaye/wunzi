@@ -16,6 +16,7 @@ The dataset is gated. Before the first run:
 from __future__ import annotations
 
 import argparse
+import re
 import json
 import sys
 from dataclasses import asdict
@@ -69,7 +70,19 @@ def main() -> int:
     run.add_argument("--audio-root", default=None)
     run.add_argument("--out", default=None)
 
+    rescore = sub.add_parser(
+        "rescore",
+        help="Recompute a saved run with the current scoring rules — no API calls",
+    )
+    rescore.add_argument("--input", required=True, help="results-*.json from a previous run")
+    rescore.add_argument("--bootstrap", type=int, default=1000)
+    rescore.add_argument("--out", default=None)
+
     args = parser.parse_args()
+
+    if args.command == "rescore":
+        return _rescore(args)
+
     settings = get_settings()
 
     # Before anything is downloaded: running twenty utterances to discover that
@@ -162,7 +175,8 @@ def render(report: AfriSwitchReport) -> str:
         f"# {'AfriSwitch' if code_switched else (report.source_label or 'Fallback corpus')}"
         + (f" — {report.config}" if code_switched else ""),
         "",
-        f"- Utterances: {report.utterance_count}",
+        f"- Utterances: {report.utterance_count}"
+        + (f" ({_scored_count(report)} scored)" if _scored_count(report) != report.utterance_count else ""),
         f"- Models: {', '.join(LABEL.get(p, p) for p in report.providers)}",
         "- Source: `intronhealth/AfriSwitch`, `test` split, CC BY-NC-SA 4.0"
         if code_switched
@@ -186,6 +200,8 @@ def render(report: AfriSwitchReport) -> str:
 
     if not report.publishable:
         lines += [f"> **NOT PUBLISHABLE.** {report.publishability_note}", ""]
+    elif report.publishability_note:
+        lines += [f"> {report.publishability_note}", ""]
 
     # Failures are stated before any metric table. A reader must not have to
     # infer from four identical 1.000s that nothing was measured.
@@ -197,9 +213,11 @@ def render(report: AfriSwitchReport) -> str:
             lines.append(f"| {LABEL.get(provider, provider)} | {rate:.0%} |")
         lines += [
             "",
-            "A failed call is recorded as an empty transcript and scores a word "
-            "error rate of 1.0. Where the failure rate is high, the error rates "
-            "below describe the failures rather than the models.",
+            "Failed calls are **excluded** from the error rates below, which are "
+            "computed over successful calls only. A failure is a failure to "
+            "measure, not a measurement of zero — averaging it in as a word error "
+            "rate of 1.0 would make the figures partly a measure of the provider's "
+            "queue.",
             "",
         ]
 
@@ -294,6 +312,8 @@ def _preflight(providers: list[str]) -> bool:
     produces a report full of 1.000s that have to be explained away. The mode and
     every provider are resolved first, and the failure is named in one line.
     """
+    import asyncio
+
     from app.asr.registry import get_provider
 
     settings = get_settings()
@@ -325,7 +345,19 @@ def _preflight(providers: list[str]) -> bool:
             )
             continue
 
-        print(f"  {provider}: configured ({base_url})", file=sys.stderr)
+        # A wrong model name is invisible until the first call, and a run of
+        # two hundred discovers it two hundred times.
+        instance = get_provider(provider, settings)
+        model_error = asyncio.run(instance.verify_model())
+        if model_error:
+            problems.append(f"{provider}: {model_error}")
+            continue
+
+        label = getattr(instance, "model", None)
+        print(
+            f"  {provider}: configured ({base_url}" + (f", {label})" if label else ")"),
+            file=sys.stderr,
+        )
 
     if problems:
         print("\nCannot run:", file=sys.stderr)
@@ -342,11 +374,128 @@ def _preflight(providers: list[str]) -> bool:
     return True
 
 
+def _rescore(args) -> int:
+    """
+    Recomputes a saved run under the current scoring rules.
+
+    Provider calls cost money and a benchmark run is not repeatable on a spent
+    budget. Every per-utterance result is already in the saved JSON, so a
+    methodology fix — excluding failed calls from the error rates — can be
+    applied to a run that has already happened. No audio is sent, no credit is
+    consumed, and the corrected figures come from exactly the same measurements.
+    """
+    from app.benchmark.afriswitch_runner import AfriSwitchReport, AfriSwitchRunner, UtteranceResult
+
+    source = Path(args.input)
+    if not source.exists():
+        print(f"No such file: {source}", file=sys.stderr)
+        return 2
+
+    saved = json.loads(source.read_text(encoding="utf-8"))
+
+    results = [
+        UtteranceResult(
+            utterance_id=row.get("utterance_id", ""),
+            provider=row.get("provider", ""),
+            cmi=float(row.get("cmi") or 0.0),
+            cmi_band=row.get("cmi_band", "moderate"),
+            num_switch_points=int(row.get("num_switch_points") or 0),
+            duration=float(row.get("duration") or 0.0),
+            reference=row.get("reference", ""),
+            hypothesis=row.get("hypothesis", ""),
+            wer=float(row.get("wer") or 0.0),
+            cer=float(row.get("cer") or 0.0),
+            code_switch=row.get("code_switch") or {},
+            latency_ms=row.get("latency_ms"),
+            failed=bool(row.get("failed")),
+            failure_reason=row.get("failure_reason"),
+            used_placeholder_fixture=bool(row.get("used_placeholder_fixture")),
+        )
+        for row in saved.get("results", [])
+    ]
+
+    if not results:
+        print(f"{source} contains no per-utterance results to rescore.", file=sys.stderr)
+        return 1
+
+    report = AfriSwitchReport(
+        config=saved.get("config", "kinyarwanda"),
+        providers=saved.get("providers", []),
+        utterance_count=saved.get("utterance_count", len(results)),
+        dataset_notes=saved.get("dataset_notes", []),
+        band_profile=saved.get("band_profile", {}),
+        results=results,
+        source=saved.get("source", "afriswitch"),
+        source_label=saved.get("source_label"),
+    )
+
+    runner = AfriSwitchRunner.__new__(AfriSwitchRunner)
+    runner.settings = get_settings()
+    runner.audio_root = None
+
+    code_switched = report.source == "afriswitch"
+    runner._aggregate(report, args.bootstrap, code_switched)
+    runner._pair(report, args.bootstrap, code_switched)
+    report.sanity = runner._sanity_check(report, report.config)
+
+    failures = sum(1 for r in results if r.failed)
+    rate = failures / len(results)
+    report.publishable = rate < 0.20
+    report.publishability_note = (
+        f"{failures} of {len(results)} provider calls failed ({rate:.0%}) and are "
+        "excluded from the error rates, which are computed over successful calls. "
+        "Reported for completeness."
+        if failures
+        else None
+    )
+
+    out = Path(args.out or source.parent)
+    out.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    slug = f"{report.source}-{report.config}-rescored-{stamp}"
+
+    (out / f"{slug}.json").write_text(
+        json.dumps(asdict(report), indent=2, default=str), encoding="utf-8"
+    )
+
+    markdown = render(report)
+    (out / f"{slug}.md").write_text(markdown, encoding="utf-8")
+    print(markdown)
+
+    return 0
+
+
+def _scored_count(report: AfriSwitchReport) -> int:
+    """Utterances that produced a transcript, per provider — they all see the same set."""
+    for stats in report.overall.values():
+        count = stats.get("sample_count")
+        if count:
+            return int(count["value"])
+    return report.utterance_count
+
+
 def _failure_reasons(report: AfriSwitchReport) -> list[tuple[str, int]]:
+    """
+    Grouped by cause, not by occurrence.
+
+    Every queued clip carries its own file_id, so keying on the raw message
+    printed twelve identical-looking lines that differed only by a UUID and
+    buried the one thing worth knowing: they were all the same problem.
+    """
     counts: dict[str, int] = {}
+
     for result in report.results:
-        if result.failed and result.failure_reason:
-            counts[result.failure_reason] = counts.get(result.failure_reason, 0) + 1
+        if not (result.failed and result.failure_reason):
+            continue
+        # Group on the shape of the problem, not on its identifiers. Every
+        # queued clip carries a distinct file_id, so keying on the raw message
+        # printed one line per occurrence and buried the single fact worth
+        # knowing: they were all the same failure.
+        key = re.sub(r"\(file_id[^)]*\)", "(file_id <id>)", result.failure_reason)
+        key = re.sub(r"[0-9a-f]{8}-[0-9a-f-]{20,}", "<id>", key)
+        key = key.split(".")[0].strip()[:160]
+        counts[key] = counts.get(key, 0) + 1
+
     return sorted(counts.items(), key=lambda item: -item[1])
 
 

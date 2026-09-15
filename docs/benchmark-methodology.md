@@ -103,6 +103,21 @@ Monolingual utterances are **excluded** from switch preservation rather than
 scored 1.0. There was nothing to preserve, and counting it as a success would
 hand every model free marks.
 
+### Failed calls
+
+Error rates are computed over **successful calls only**. A provider failure is a
+failure to measure, not a measurement of zero: scoring it as an empty transcript
+gives a word error rate of 1.0, and averaging that in makes the figure partly a
+measure of the provider's queue rather than of its accuracy.
+
+On the first 200-utterance run, twelve clips came back `FILE_QUEUED` and pushed
+Sahara's reported WER from 0.361 to 0.399 — a 10% inflation that had nothing to
+do with transcription quality.
+
+The failure rate is reported separately and prominently, so nothing is hidden by
+the exclusion. Above 20% the run is marked not publishable: at that point the
+surviving sample is no longer representative of the corpus.
+
 ### Statistics
 
 Bootstrap confidence intervals on every figure. Sahara is compared to each

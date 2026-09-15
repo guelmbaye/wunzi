@@ -30,7 +30,10 @@ class Settings(BaseSettings):
 
     whisper_api_key: str | None = None
     whisper_base_url: str = "https://api.openai.com/v1"
-    whisper_model: str = "whisper-large-v3"
+    # OpenAI's hosted name is `whisper-1`. `whisper-large-v3` is the
+    # open-weights name on Hugging Face and 404s against this API — the same
+    # class of mistake as inventing an endpoint.
+    whisper_model: str = "whisper-1"
 
     model_b_api_key: str | None = None
     model_b_base_url: str | None = None
