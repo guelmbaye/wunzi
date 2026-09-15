@@ -57,10 +57,21 @@ against Intron's published figure. It does **not** measure code-switch handling 
 the report names the corpus it used, says so explicitly, and excludes switch
 preservation rather than scoring it.
 
-If that run cannot happen before the deadline, **submit the report as written**.
-It states plainly which layer is measured and which is not. A benchmark that
-declares its gap is worth more than one that presents a smoke test as a result —
-and the software itself refuses to publish placeholder-derived numbers.
+**Sahara has been measured**: 200 AfriSwitch Kinyarwanda utterances, WER 0.36
+against Intron's published 0.26 on their clinical set, stratified by code-mixing
+intensity. Paste the rescored report into § "Layer B — Results".
+
+Sahara's API credits are spent, so that run cannot be repeated. Use `rescore` on
+the saved JSON to apply the current scoring rules without any API call:
+
+```bash
+python -m app.benchmark.afriswitch_cli rescore \
+  --input benchmark/reports/afriswitch-kinyarwanda-<timestamp>.json \
+  --out benchmark/reports
+```
+
+Whisper is billed separately and is still worth running — a second model turns a
+measurement into the comparison the rubric asks for.
 
 ## Demo video
 

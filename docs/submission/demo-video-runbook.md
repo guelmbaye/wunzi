@@ -30,7 +30,29 @@ file has no cached transcription, the job fails, and the recording is marked
 `FAILED`. The intake screen offers a clearly labelled **"Use the stored
 recording"** button instead — use that, and say on camera why it is there.
 
-### 2. Reset to a clean state
+### 2. Produce the report you will show in Shot 7
+
+The AfriSwitch numbers live in a file, not in the web interface — the tier-1
+benchmark runs from the CLI and writes markdown. Generate the corrected version
+before filming:
+
+```powershell
+Get-ChildItem benchmark\reports\afriswitch-kinyarwanda-*.json |
+  Sort-Object LastWriteTime | Select-Object -Last 1
+
+python -m app.benchmark.afriswitch_cli rescore `
+  --input benchmark\reports\afriswitch-kinyarwanda-<timestamp>.json `
+  --out benchmark\reports
+```
+
+`rescore` re-aggregates a saved run under the current rules — failed calls
+excluded from the error rates — and makes **no API calls**. Sahara's credits are
+spent; this is how the corrected figures are produced without another run.
+
+Open the resulting `*-rescored-*.md` in an editor with a readable font. That is
+the second screen of Shot 7.
+
+### 3. Reset to a clean state
 
 ```bash
 cd /var/www/wunzi
@@ -46,7 +68,7 @@ Paste the token into `WUNZI_API_TOKEN`, then `up -d --build web`.
 computed at display time, so a case built before the latest deploy will show the
 old text.
 
-### 3. Prepare the browser
+### 4. Prepare the browser
 
 - **Close every other tab.** A visible unrelated tab is the most common thing
   that makes a demo look unrehearsed.
@@ -65,10 +87,13 @@ old text.
 8  https://wunzi.vylantic.com/benchmark
 ```
 
+Plus one editor window holding
+`benchmark/reports/afriswitch-kinyarwanda-rescored-*.md`.
+
 Get `<ID>` from `/cases` once, and keep it on a sticky note. Fumbling a URL on
 camera costs a retake.
 
-### 4. Check the recording setup
+### 5. Check the recording setup
 
 - **1080p minimum.** The issue map has small text; 720p loses the confidence
   intervals entirely.
@@ -77,11 +102,17 @@ camera costs a retake.
   English subtitles — a judge should not be reading one language while looking
   at another.
 
-### 5. One thing to rehearse
+### 6. One thing to rehearse
 
-The placeholder caveat in Shot 7. Say it plainly and without hedging. A judge who
-discovers it themselves reads it as a gap; a team that states it first reads as
-one you can trust with the numbers it does publish.
+The finding in Shot 7b: Sahara keeps the matrix language but drops most of the
+English insertions, and word error rate does not show it. That is the argument
+the whole submission rests on, and it is the one passage worth saying out loud a
+few times before recording.
+
+The caveat that goes with it — one model measured, not four — is one sentence.
+Say it plainly and move on. A judge who discovers a gap themselves reads it as a
+gap; a team that names it first reads as one you can trust with the numbers it
+does publish.
 
 ---
 
@@ -138,14 +169,20 @@ appears.
 
 Click **"Use the stored recording for Party A"**.
 
-**Once the transcript is on screen, this is the most important moment in the
-video.** Scroll to the segment list and point at the language tags:
+**Once the transcript is on screen**, scroll to the segment list and point at the
+language tags:
 
-> Look at the language tags on the right. Kinyarwanda, then English, then back
-> again — inside one account. WUNZI marks the switch where the provider actually
-> reported it, and shows nothing where the provider does not report it. It never
-> guesses a language, because an invented language tag would be a falsified audit
-> trail.
+> Kinyarwanda, then English, then back again — inside one account. That is the
+> speech this product exists for.
+>
+> WUNZI marks a switch only where the provider reported one, and shows nothing
+> where it did not. Intron's file endpoint returns a flat transcript with no
+> per-segment language, so on a live call there are no tags here — and none get
+> invented, because a language tag WUNZI made up would be a falsified audit
+> trail. What you are seeing is the stored run, which carries them.
+
+Do not overstate this on camera. The claim is that WUNZI never fabricates
+metadata, not that every provider supplies it.
 
 Scroll to the claim cards:
 
@@ -241,11 +278,21 @@ Scroll to **Missing**:
 
 ---
 
-## Shot 7 — The benchmark · 3:55–4:40
+## Shot 7 — The benchmark · 3:55–4:45
+
+**This shot changed.** It was written when the only numbers available came from
+placeholder fixtures. Sahara has since been measured on the real AfriSwitch
+Kinyarwanda corpus, so the caveat that used to fill this shot is now one
+sentence, and the shot leads with a result.
+
+**Two screens, in this order.**
+
+### 7a — the mechanism, in the product · 3:55–4:15
 
 **Screen:** tab 8, `/benchmark`, then open the most recent run.
 
-**Say:**
+This is the tier-2 case: the same demo dispute, run through four speech models
+with everything downstream frozen.
 
 > Same audio. Same claim engine, same guard, same issue rules. Only the speech
 > model changes.
@@ -253,27 +300,65 @@ Scroll to **Missing**:
 > The question is not which model transcribes more words correctly. It is whether
 > a mediator reading the resulting case would have understood the same thing.
 
-Point at the same-audio comparison table, then at the bottom row:
+Point at the bottom row of the same-audio table:
 
 > The last row is the mediation state — what the mediator would actually have
 > been handed.
 
-**Now the caveat. Say it plainly:**
+Then, without dwelling on it:
 
-> I want to be direct about what these numbers are. The benchmark harness is
-> complete: the AfriSwitch dataset loader, stratification by code-mixing
-> intensity, word error rate, and three code-switch measures including one that
-> detects a model translating instead of transcribing. All of it is tested.
+> These particular clips are stored fixtures, so this screen shows the mechanism
+> rather than a measurement — and the software says so itself. The measured
+> numbers are here.
+
+### 7b — the measurement · 4:15–4:45
+
+**Screen:** the rescored AfriSwitch report, open in an editor or rendered
+markdown. `benchmark/reports/afriswitch-kinyarwanda-rescored-*.md`.
+
+Scroll to the **Overall** table and the **code-mixing profile**.
+
+> This is Sahara on AfriSwitch — Intron's own code-switching corpus, 200
+> Kinyarwanda utterances, human-transcribed, stratified by how densely the
+> speaker mixes languages. We did not choose which utterances are hard.
 >
-> But the fixtures shipped in this repository are placeholders I wrote myself.
-> The software knows that — it marks the run not publishable and the interface
-> refuses to show a headline figure. What this run demonstrates is the mechanism:
-> a misheard amount or a lost negation does propagate to a different mediation
-> state. It says nothing about any speech model's real accuracy. Those numbers
-> need a live run on consented audio, and that is the next thing we do.
+> Word error rate is 0.36. Intron publishes 0.26 for Sahara on their clinical
+> Kinyarwanda set. Ours is conversational code-switched speech, which is harder,
+> so that gap is what you would expect — and the benchmark prints the comparison
+> on every run, because a harness that lands an order of magnitude away is broken
+> before it is interesting.
 
-If you have run Tier 1 live before filming, replace that paragraph with the real
-results and say so — it is a far stronger ending.
+Then the finding — this is the part worth slowing down for:
+
+> Two things WER cannot tell you, and this benchmark does.
+>
+> Sahara does not translate. Matrix language collapse is essentially zero, and
+> span fidelity is 0.84 — the Kinyarwanda survives. That matters more than it
+> sounds: a model that returns fluent English for a Kinyarwanda account has
+> produced useful prose and the wrong artefact, because it is no longer what the
+> speaker said.
+>
+> But it reproduces only about 40% of the English insertions, and that holds at
+> every level of mixing. Word error rate rises with mixing intensity — 0.33 to
+> 0.45 — while switch preservation stays flat and low. A model can hold its error
+> rate and still stop reproducing how the person actually spoke.
+
+**One sentence of caveat, not a paragraph:**
+
+> One model is measured here, not four. Sahara's credits ran out before the
+> comparison could be completed, and the report says which layer is measured and
+> which is not.
+
+*If the Whisper run completed before filming, drop that sentence and say instead:
+"Sahara and Whisper on identical audio, same stratified sample, same harness."*
+
+### What not to do in this shot
+
+- **Do not cite the ten-utterance run.** An early sample suggested switch
+  preservation collapsed on heavy mixing. At 200 it did not — 0.34, 0.41, 0.43,
+  flat. It was noise, and a judge who recalculates would find it.
+- **Do not round 0.36 down** or drop the confidence interval when you show the
+  table on screen.
 
 ---
 
@@ -315,8 +400,9 @@ Close on:
 | 4 | Party B + the negation | 0:35 | 2:25 |
 | 5 | The guard interrupts | 0:40 | 3:05 |
 | 6 | The issue map | 0:50 | 3:55 |
-| 7 | The benchmark + caveat | 0:45 | 4:40 |
-| 8 | The boundary | 0:20 | 5:00 |
+| 7a | Benchmark mechanism, in the product | 0:20 | 4:15 |
+| 7b | The measured AfriSwitch result | 0:30 | 4:45 |
+| 8 | The boundary | 0:20 | 5:05 |
 
 Shots 2 and 8 are the compressible ones if you overrun. **Do not cut Shot 5** —
 the guard deciding to interrupt is the strongest single argument that the system
@@ -328,7 +414,7 @@ is agentic in a way that helps rather than one that overreaches.
 
 | Criterion | Weight | Shot |
 | --- | --- | --- |
-| Code-Switching Benchmark Quality | 30% | 7, plus the written report |
+| Code-Switching Benchmark Quality | 30% | **7b**, plus the written report |
 | Product Quality & Fit ("is it agentic?") | 25% | **5**, then 3 and 6 |
 | Real-World Impact | 20% | 2, with the Abunzi figures |
 | Technical Execution | 15% | 3 (processing states), 7 (frozen pipeline) |
@@ -343,8 +429,8 @@ is agentic in a way that helps rather than one that overreaches.
   be five minutes of the product working.
 - **Do not speed up the processing state.** Watching the transcript arrive is
   evidence that it is real. Cutting it invites the suspicion that it was not.
-- **Do not skip the caveat in Shot 7**, and do not bury it in a fast sentence at
-  the end.
+- **Do not cite the ten-utterance run.** It showed a pattern that did not
+  survive at 200. Shot 7 says why.
 - **Do not click anything that 404s or errors.** Walk the exact path above once
   before recording.
 - **Do not read these lines word for word.** They are the argument, not a script.
@@ -357,8 +443,9 @@ is agentic in a way that helps rather than one that overreaches.
 - Upload to YouTube as **unlisted** (or public).
 - Title: `WUNZI — Switch-Aware Mediation Case Intelligence | Sahara CodeSwitch Africa Challenge`
 - In the description, put the repository link, the category
-  (Legal & Public Services), the languages, and one line naming the placeholder
-  caveat — so it is visible to anyone who skips to the benchmark section.
+  (Legal & Public Services), the languages, and one line naming what was measured
+  and what was not — so it is visible to anyone who skips to the benchmark
+  section.
 - **Check the link in a private window before submitting.** An unlisted video set
   to private by accident is an unrecoverable mistake with one submission per
   token.
