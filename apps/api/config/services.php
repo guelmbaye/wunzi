@@ -38,7 +38,7 @@ return [
     'sahara' => [
         'key' => env('SAHARA_API_KEY'),
         'base_url' => env('SAHARA_BASE_URL'),
-        'model' => env('SAHARA_MODEL', 'sahara-2.5-trilingual'),
+        'model' => env('SAHARA_MODEL', 'sahara'),
     ],
 
 ];

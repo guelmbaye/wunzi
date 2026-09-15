@@ -24,9 +24,11 @@ class Settings(BaseSettings):
     sahara_api_key: str | None = None
     # Published at docs.voice.intron.io/docs/stt/file-upload-sync.
     sahara_base_url: str = "https://infer.voice.intron.io"
-    # The sync upload endpoint takes no model parameter; this is a label for
-    # the benchmark report, not something sent on the wire.
-    sahara_model: str = "intron-sahara-stt"
+    # The sync upload endpoint takes no model parameter and returns no model
+    # field. This is a column label for the benchmark report, never sent on the
+    # wire — and deliberately not a version string, because inventing one would
+    # attribute a release to Intron that does not exist.
+    sahara_model: str = "sahara"
 
     whisper_api_key: str | None = None
     whisper_base_url: str = "https://api.openai.com/v1"

@@ -61,7 +61,10 @@ export default function ResponsibleAiPage() {
           A system that always sounds confident is more dangerous in mediation than one that
           says a thing was not established. When a critical amount, date or negation cannot
           be heard reliably, WUNZI asks the speaker and marks the issue unverified until
-          they answer.
+          they answer. How reliably it can tell depends on the provider: some report a
+          confidence score per segment and some report none, and where there is none the
+          guard falls back to weaker structural signals — an unresolved negation, an
+          uncertain attribution, an implausible amount.
         </Block>
 
         <Block title="Verification belongs to the speaker">
@@ -85,8 +88,14 @@ export default function ResponsibleAiPage() {
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-ink-soft">
           <li>Rental deposit disputes only, with two parties, built around Rwandan practice.</li>
           <li>
-            Evaluated on fifteen disputes. Confidence intervals are reported because the set
-            is small enough that a point estimate alone would overstate what is known.
+            Speech accuracy is measured on 200 utterances of Intron&rsquo;s AfriSwitch
+            Kinyarwanda corpus, stratified by how densely the speaker mixes languages. The
+            mediation outcome is evaluated on fifteen disputes of our own, which is small
+            enough that confidence intervals are reported rather than point estimates.
+          </li>
+          <li>
+            Two speech models were measured, not four. The remaining adapters are
+            implemented but were not run.
           </li>
           <li>
             Kinyarwanda numerals and first-person verb forms are handled by an explicit

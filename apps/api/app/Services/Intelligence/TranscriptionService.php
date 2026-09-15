@@ -115,7 +115,7 @@ class TranscriptionService
     private function modelFor(AsrProvider $provider): string
     {
         return match ($provider) {
-            AsrProvider::SAHARA => (string) env('SAHARA_MODEL', 'sahara-2.5-trilingual'),
+            AsrProvider::SAHARA => (string) env('SAHARA_MODEL', 'sahara'),
             AsrProvider::WHISPER => (string) env('WHISPER_MODEL', 'whisper-large-v3'),
             AsrProvider::MODEL_B => (string) env('MODEL_B_MODEL', 'model_b'),
             AsrProvider::MODEL_C => (string) env('MODEL_C_MODEL', 'model_c'),

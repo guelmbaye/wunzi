@@ -30,7 +30,7 @@ export default function NewCasePage() {
             <option value="rental_deposit">Rental deposit dispute</option>
           </select>
           <p className="mt-1.5 text-micro text-ink-faint">
-            Rental deposit is the only type WUNZI is trained and evaluated on.
+            Rental deposit is the only type WUNZI is built and evaluated for. Nothing here is trained: claim extraction runs on rules and lexicons, so a mediator can see why every claim was produced.
           </p>
         </div>
 

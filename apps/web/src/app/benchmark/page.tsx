@@ -41,6 +41,19 @@ export default async function BenchmarkPage() {
           the speech model preserved the dispute — whether a mediator reading the case would
           have understood the same thing.
         </p>
+
+        {/* The speech-layer measurement runs from the CLI and writes a report file, so
+            it never appears on this page. Saying where it is beats letting a visitor
+            conclude the runs below are all there is. */}
+        <p className="mt-5 rounded-card bg-paper-sunken px-5 py-4 text-sm leading-relaxed">
+          The runs listed here are the mediation-outcome tier, scored on our own scenarios.
+          The speech layer is measured separately against Intron&rsquo;s AfriSwitch
+          Kinyarwanda corpus — 200 human-transcribed utterances, stratified by how densely
+          the speaker mixes languages — and that report lives in{' '}
+          <span className="tabular">benchmark/reports/</span> in the repository, alongside
+          the methodology in{' '}
+          <span className="tabular">docs/benchmark-methodology.md</span>.
+        </p>
       </header>
 
       {runs === null ? (

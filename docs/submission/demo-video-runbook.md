@@ -52,7 +52,30 @@ spent; this is how the corrected figures are produced without another run.
 Open the resulting `*-rescored-*.md` in an editor with a readable font. That is
 the second screen of Shot 7.
 
-### 3. Reset to a clean state
+### 3. Decide whether to redeploy
+
+The demo shows a model label under the transcript. If it reads
+`sahara-2.5-trilingual`, the server is running a build from before today: that
+string was an invented version number, and the real API returns no model field at
+all. A judge from Intron would be looking at a release of their own product that
+does not exist.
+
+Redeploying replaces it with `sahara`, which is true:
+
+```bash
+cd /var/www/wunzi && git pull
+docker compose -f docker-compose.prod.yml up -d --build web
+docker compose -f docker-compose.prod.yml exec app php artisan wunzi:demo-case --fresh
+```
+
+The label lives in the stored transcript run, so rebuilding the demo case is what
+actually changes it — `git pull` alone will not.
+
+**If time is short, film without redeploying.** One wrong label in a five-minute
+video costs less than a video that does not exist. Just do not read the model
+name aloud.
+
+### 4. Reset to a clean state
 
 ```bash
 cd /var/www/wunzi
@@ -68,7 +91,7 @@ Paste the token into `WUNZI_API_TOKEN`, then `up -d --build web`.
 computed at display time, so a case built before the latest deploy will show the
 old text.
 
-### 4. Prepare the browser
+### 5. Prepare the browser
 
 - **Close every other tab.** A visible unrelated tab is the most common thing
   that makes a demo look unrehearsed.
@@ -93,7 +116,7 @@ Plus one editor window holding
 Get `<ID>` from `/cases` once, and keep it on a sticky note. Fumbling a URL on
 camera costs a retake.
 
-### 5. Check the recording setup
+### 6. Check the recording setup
 
 - **1080p minimum.** The issue map has small text; 720p loses the confidence
   intervals entirely.
@@ -102,7 +125,7 @@ camera costs a retake.
   English subtitles — a judge should not be reading one language while looking
   at another.
 
-### 6. One thing to rehearse
+### 7. One thing to rehearse
 
 The finding in Shot 7b: Sahara keeps the matrix language but drops most of the
 English insertions, and word error rate does not show it. That is the argument
@@ -158,16 +181,28 @@ Keep this short. It is context, not the demo.
 
 **Screen:** tab 3, `/cases/<ID>/party-a`.
 
-**In live mode:** press record, speak the Party A account aloud, stop, send for
-transcription. Let the processing state show — do not cut it. Then the transcript
-appears.
+**The recorder does not appear on the demo case.** `wunzi:demo-case` already
+attaches a recording to each party, and the intake screen only shows the recorder
+when there is none. Opening `/cases/<ID>/party-a` goes straight to the transcript.
 
-**In fixture mode:** show the consent gate first, then:
+That is the right screen for this shot — but it means the consent gate, which is
+worth showing, is not on it. Two ways to handle it:
 
-> This deployment replays stored provider output rather than calling a live
-> speech API, so I am using the stored consented clip rather than recording now.
+**Simplest — skip the recorder.** Open the demo case and go straight to the
+transcript. Mention consent in one line instead of showing it:
 
-Click **"Use the stored recording for Party A"**.
+> Recording cannot start until the speaker consents. That is a field on the
+> recording, not a checkbox in a footer, and the API refuses an upload without it.
+
+**Better, if you have two minutes — show the gate on a fresh case.** Create a case
+from `/cases/new`, open Party A, and let the consent panel sit on screen while you
+say the line above. Do **not** press record in fixture mode: a new recording has
+no cached transcription and the job fails. Then navigate to the demo case for the
+transcript.
+
+If your deployment is recent enough to carry the fixture-replay button, it reads
+**"Use the stored recording for Party A"** and completes the intake honestly. If
+you do not see it, the server is running an older build — use the first option.
 
 **Once the transcript is on screen**, scroll to the segment list and point at the
 language tags:
@@ -197,7 +232,8 @@ Scroll to the claim cards:
 
 ## Shot 4 — Party B speaks · 1:50–2:25
 
-**Screen:** tab 4, `/cases/<ID>/party-b`. Load the account the same way.
+**Screen:** tab 4, `/cases/<ID>/party-b`. The transcript is already there, as on
+the previous screen.
 
 **Say:**
 
