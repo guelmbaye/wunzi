@@ -41,6 +41,22 @@ python -m app.benchmark.afriswitch_cli run \
 # 2. Paste the resulting table into benchmark-report.md § "Layer B — Results"
 ```
 
+**If AfriSwitch access has not been granted** — it is gated behind manual author
+review — the same harness runs on a reachable monolingual Kinyarwanda corpus,
+discovered at runtime:
+
+```bash
+python -m app.benchmark.afriswitch_cli run \
+  --source fallback --limit 200 \
+  --providers sahara,whisper,model_b,model_c \
+  --out benchmark/reports
+```
+
+That measures Kinyarwanda accuracy on real audio and validates the harness
+against Intron's published figure. It does **not** measure code-switch handling —
+the report names the corpus it used, says so explicitly, and excludes switch
+preservation rather than scoring it.
+
 If that run cannot happen before the deadline, **submit the report as written**.
 It states plainly which layer is measured and which is not. A benchmark that
 declares its gap is worth more than one that presents a smoke test as a result —

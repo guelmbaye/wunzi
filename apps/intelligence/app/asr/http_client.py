@@ -30,6 +30,14 @@ async def post_json(
                     url, headers=headers, json=json_body, files=files, data=data
                 )
 
+            if response.status_code == 429:
+                # Intron documents 30 requests per minute and returns
+                # Retry-After. Honouring it is cheaper than burning the retry
+                # budget on calls the server has already told us to delay.
+                delay = float(response.headers.get("Retry-After", "2") or 2)
+                await asyncio.sleep(min(delay, 60.0))
+                raise AsrError(provider, "rate limited", 429)
+
             if response.status_code >= 500:
                 raise AsrError(provider, f"upstream error {response.status_code}", response.status_code)
             if response.status_code >= 400:
@@ -39,12 +47,50 @@ async def post_json(
             return response.json()
         except (httpx.TimeoutException, httpx.TransportError, AsrError) as exc:
             last_error = exc
-            if isinstance(exc, AsrError) and (exc.status_code or 500) < 500:
+            # 429 is retried: the server asked for a delay, not for a different
+            # request. Other 4xx will not become 2xx on a second attempt.
+            if isinstance(exc, AsrError) and (exc.status_code or 500) < 500 and exc.status_code != 429:
                 raise
             if attempt < settings.asr_max_retries:
                 await asyncio.sleep(0.5 * (2**attempt))
 
     raise AsrError(provider, f"failed after retries: {last_error}")
+
+
+# Announcing an MP3 as audio/wav is the kind of mismatch that produces a
+# plausible-looking but wrong transcript, so the container is read from the
+# filename rather than assumed.
+CONTENT_TYPES = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".flac": "audio/flac",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/opus",
+    ".m4a": "audio/mp4",
+    ".webm": "audio/webm",
+}
+
+
+def content_type_for(audio_uri: str) -> tuple[str, str]:
+    """(filename, mime type) for a multipart upload."""
+    from pathlib import PurePosixPath
+
+    name = PurePosixPath(audio_uri.split("?")[0]).name or "audio.wav"
+    suffix = PurePosixPath(name).suffix.lower()
+
+    return name, CONTENT_TYPES.get(suffix, "audio/wav")
+
+
+async def post_multipart(
+    provider: str,
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    files: dict[str, Any] | None = None,
+    data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Multipart upload with the same retry budget as post_json."""
+    return await post_json(provider, url, headers=headers, files=files, data=data)
 
 
 async def read_audio_bytes(audio_uri: str) -> bytes:

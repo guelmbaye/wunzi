@@ -1,0 +1,448 @@
+{
+  "config": "kinyarwanda",
+  "providers": [
+    "sahara"
+  ],
+  "utterance_count": 10,
+  "dataset_notes": [
+    "Loaded 10 utterances, dataset card says 1577. A sampled run is fine; a full run is not."
+  ],
+  "band_profile": {
+    "light": {
+      "utterances": 3,
+      "hours": 0.009,
+      "mean_cmi": 5.54,
+      "mean_switch_points": 2.33
+    },
+    "moderate": {
+      "utterances": 4,
+      "hours": 0.013,
+      "mean_cmi": 13.03,
+      "mean_switch_points": 5.25
+    },
+    "heavy": {
+      "utterances": 3,
+      "hours": 0.004,
+      "mean_cmi": 24.85,
+      "mean_switch_points": 3.33
+    }
+  },
+  "source": "afriswitch",
+  "source_label": null,
+  "results": [
+    {
+      "utterance_id": "-1FoqOayPcE_chunk_1505104-1519312_149.wav",
+      "provider": "sahara",
+      "cmi": 6.059999942779541,
+      "cmi_band": "light",
+      "num_switch_points": 3,
+      "duration": 14.208000183105469,
+      "reference": "Ntihazagire umuntu ugira ikibazo cyangwa se ugira icyo yifuza kutwunganiraho ngo atinye kubitubwira bazabitubwire kuri platforms zacu izo ari zo zose tuzabasubiza kandi tuzababwira tuzabamenyesha uburyo butandukanye bwo kugira ngo babe batu joining",
+      "hypothesis": "Ntihageze hagire umuntu ugira ikibazo cyangwa se ugira icyo yifuza kutwunganiraho ngo batinye kubitubwira bazabitubwire kuri platform zacu izo arizo zose tuzabasubiza kandi tuzababwira tuzabamenyesha uburyo butandukanye bwo kugira ngo babe batujoing",
+      "wer": 0.24242424242424243,
+      "cer": 0.04435483870967742,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 1.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": 3581,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "GqUsSiJnSR8_chunk_1619200-1623168_186.wav",
+      "provider": "sahara",
+      "cmi": 27.270000457763672,
+      "cmi_band": "heavy",
+      "num_switch_points": 4,
+      "duration": 3.9679999351501465,
+      "reference": "Ahitemo noneho ugendeye kuri talent, talent rero, talent se ko zitagereranywa.",
+      "hypothesis": "ahitemo ugende kuri tamp rero tarase",
+      "wer": 0.7272727272727273,
+      "cer": 0.5897435897435898,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.6667,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": 3836,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "ePB3Qr8ikOA_chunk_792720-799088_84.wav",
+      "provider": "sahara",
+      "cmi": 12.5,
+      "cmi_band": "moderate",
+      "num_switch_points": 2,
+      "duration": 6.368000030517578,
+      "reference": "ugende wumva koko ufite support impande zose nkubushize naragiye ariko ubwo urumva nari uwumwe ariko ubungubu",
+      "hypothesis": "ugende wumva koko ufite support impande zose nk'ubushize naragiye ariko ubwo urumva nari umwe ariko ubungubu",
+      "wer": 0.125,
+      "cer": 0.027522935779816515,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 1.0,
+        "span_language_fidelity": 1.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": 3130,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "-1FoqOayPcE_chunk_2517760-2522224_262.wav",
+      "provider": "sahara",
+      "cmi": 20.0,
+      "cmi_band": "heavy",
+      "num_switch_points": 4,
+      "duration": 4.464000225067139,
+      "reference": "Ni ibintu bimwe ndimo gutekereza no kuvugaho muri vlogs zanjye",
+      "hypothesis": "Ni ibintu bimwe ndimo gutekereza no kuvugaho muri brog zanjye",
+      "wer": 0.1,
+      "cer": 0.04838709677419355,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.5,
+        "span_language_fidelity": 1.0,
+        "english_ratio_reference": 0.1,
+        "english_ratio_hypothesis": 0.1
+      },
+      "latency_ms": 3402,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "B1zdC4OVvRI_chunk_2210912-2228576_265.wav",
+      "provider": "sahara",
+      "cmi": 18.18000030517578,
+      "cmi_band": "moderate",
+      "num_switch_points": 10,
+      "duration": 17.663999557495117,
+      "reference": "Kuko urumva Ni umusaza aba abizi man.. Sizigura ibihumbi bitanu? Hari ahantu. Zigura cinq mille, ariko kwa muganga, uragenda ukajyana, si photocopie y'irangamuntu se hari umunyarwanda udafite mituweli? Akayerekana. Ni ibiceri deux cents cinquante, niba atari trois cents yishyura, akagenda bakamukorera iyo gahunda, akigendera.",
+      "hypothesis": "kuko nuko urumva Pirindis musaza abizima kuri dore zigura cinq mille ariko kwa muganga uragenda ukajya sufoto kubiganga muri umunyarwanda udafite mitueri akayerekana n'ibiceri Des caribasa yishyura akagenda akamukorera gahunda aki",
+      "wer": 0.6818181818181818,
+      "cer": 0.40978593272171254,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.2,
+        "span_language_fidelity": 0.3333,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": 5195,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "N8O0D4ByU3g_chunk_1201892-1213216_142.wav",
+      "provider": "sahara",
+      "cmi": 10.34000015258789,
+      "cmi_band": "moderate",
+      "num_switch_points": 5,
+      "duration": 11.324000358581543,
+      "reference": "oya cyane kabisa ni ibintu byumvikana. ibyo bintu nibyo kuko nahise ntekereza no kuri kiz nubundi urumva ko bamuhaye time agaragaza ko ashoboye urebye indirimbo yakoreye isano yakoreye Melody",
+      "hypothesis": "cyane kabisa ibyo bintu ni byo kuko mpise ntekereza no kuri kez nubundi urumva ko bamuhaye time agaragaza uko ashoboye urebye indirimbo yakoreye Sano yakoreye Melody",
+      "wer": 0.3448275862068966,
+      "cer": 0.17277486910994763,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 1.0,
+        "span_language_fidelity": 1.0,
+        "english_ratio_reference": 0.0345,
+        "english_ratio_hypothesis": 0.0385
+      },
+      "latency_ms": 2982,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "aTojwrxJk4A_chunk_1743152-1751600_153.wav",
+      "provider": "sahara",
+      "cmi": 5.0,
+      "cmi_band": "light",
+      "num_switch_points": 2,
+      "duration": 8.447999954223633,
+      "reference": "Tuvuga muri business tangira ugire akantu winjiza kanagaragara aho kaciye yego utangire wubake amateka y'ubukungu bwawe kugirango ugire aho ugera",
+      "hypothesis": "Tuvuga muri business tangira ugire akantu akantu winjiza kanagaragara aho kaciye yego utangire wubake amateka y'ubukungu bwawe kugira ngo ugereho",
+      "wer": 0.25,
+      "cer": 0.11724137931034483,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 1.0,
+        "span_language_fidelity": 1.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": 3316,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "-1FoqOayPcE_chunk_2072080-2082464_210.wav",
+      "provider": "sahara",
+      "cmi": 11.109999656677246,
+      "cmi_band": "moderate",
+      "num_switch_points": 4,
+      "duration": 10.383999824523926,
+      "reference": "Ibyo nkwibarizagaho, ubagezeho, kuko njye aho nagiye ibyanjye simbivuze. Wowe ubagezeho. Like, wabonye iki, amaso yawe yabonye iki?",
+      "hypothesis": "njyekamo ibyo nkwibarizagaho ujye ubagezeho kuko njye aho nagiye ibyanjye simbivuze wowe ubagezeho like wabonye iki amaso yawe yabonye iki",
+      "wer": 0.1111111111111111,
+      "cer": 0.15267175572519084,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 1.0,
+        "span_language_fidelity": 1.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": 2936,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "cYJ-nwX-TgE_chunk_1980720-1985792_238.wav",
+      "provider": "sahara",
+      "cmi": 27.270000457763672,
+      "cmi_band": "heavy",
+      "num_switch_points": 2,
+      "duration": 5.072000026702881,
+      "reference": "Ariko hari igihugu bagufatana urumogi, it's good. none kuki byo tubyamagana?",
+      "hypothesis": "Ariko hari uruhu igihugu rufata nurumogi ikiduki kuki ibtu tubyamagana",
+      "wer": 0.6363636363636364,
+      "cer": 0.39473684210526316,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 1.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": 3843,
+      "failed": false,
+      "failure_reason": null,
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "HCJ03E1K7SI_chunk_1501680-1512976_83.wav",
+      "provider": "sahara",
+      "cmi": 5.559999942779541,
+      "cmi_band": "light",
+      "num_switch_points": 2,
+      "duration": 11.29598617553711,
+      "reference": "Yego birashoboka ushobora gusanga umuntu ari umukinnyi bitewe na character runaka yakinnye kuko abanyarwanda ntabwo ntago turagera kurwego",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] transcription did not complete synchronously (file_id 7d19f497-c8eb-4b04-97dd-6185828ecc38, status FILE_QUEUED). Poll the Get File Status endpoint, or use shorter clips: t",
+      "used_placeholder_fixture": false
+    }
+  ],
+  "overall": {
+    "sahara": {
+      "word_error_rate": {
+        "value": 0.4219,
+        "ci_low": 0.2402,
+        "ci_high": 0.5978
+      },
+      "character_error_rate": {
+        "value": 0.2957,
+        "ci_low": 0.1317,
+        "ci_high": 0.4775
+      },
+      "matrix_language_collapse_rate": {
+        "value": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "switch_point_preservation": {
+        "value": 0.47,
+        "ci_low": 0.2,
+        "ci_high": 0.75
+      },
+      "span_language_fidelity": {
+        "value": 0.8,
+        "ci_low": 0.6,
+        "ci_high": 1.0
+      },
+      "latency_ms": {
+        "value": 3580.1111,
+        "ci_low": 3215.4444,
+        "ci_high": 4046.7778
+      },
+      "sample_count": {
+        "value": 10.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "failure_rate": {
+        "value": 0.1,
+        "ci_low": 0.0,
+        "ci_high": 0.3
+      }
+    }
+  },
+  "by_band": {
+    "light": {
+      "sahara": {
+        "word_error_rate": {
+          "value": 0.4975,
+          "ci_low": 0.2424,
+          "ci_high": 1.0
+        },
+        "character_error_rate": {
+          "value": 0.3872,
+          "ci_low": 0.0444,
+          "ci_high": 1.0
+        },
+        "matrix_language_collapse_rate": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "switch_point_preservation": {
+          "value": 0.3333,
+          "ci_low": 0.0,
+          "ci_high": 1.0
+        },
+        "span_language_fidelity": {
+          "value": 0.6667,
+          "ci_low": 0.0,
+          "ci_high": 1.0
+        },
+        "latency_ms": {
+          "value": 3448.5,
+          "ci_low": 3316.0,
+          "ci_high": 3581.0
+        },
+        "sample_count": {
+          "value": 3.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "failure_rate": {
+          "value": 0.3333,
+          "ci_low": 0.0,
+          "ci_high": 1.0
+        }
+      }
+    },
+    "moderate": {
+      "sahara": {
+        "word_error_rate": {
+          "value": 0.3157,
+          "ci_low": 0.1181,
+          "ci_high": 0.5426
+        },
+        "character_error_rate": {
+          "value": 0.1907,
+          "ci_low": 0.0638,
+          "ci_high": 0.3455
+        },
+        "matrix_language_collapse_rate": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "switch_point_preservation": {
+          "value": 0.8,
+          "ci_low": 0.4,
+          "ci_high": 1.0
+        },
+        "span_language_fidelity": {
+          "value": 0.8333,
+          "ci_low": 0.5,
+          "ci_high": 1.0
+        },
+        "latency_ms": {
+          "value": 3560.75,
+          "ci_low": 2959.0,
+          "ci_high": 4641.75
+        },
+        "sample_count": {
+          "value": 4.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "failure_rate": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        }
+      }
+    },
+    "heavy": {
+      "sahara": {
+        "word_error_rate": {
+          "value": 0.4879,
+          "ci_low": 0.1,
+          "ci_high": 0.7273
+        },
+        "character_error_rate": {
+          "value": 0.3443,
+          "ci_low": 0.0484,
+          "ci_high": 0.5897
+        },
+        "matrix_language_collapse_rate": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "switch_point_preservation": {
+          "value": 0.1667,
+          "ci_low": 0.0,
+          "ci_high": 0.5
+        },
+        "span_language_fidelity": {
+          "value": 0.8889,
+          "ci_low": 0.6667,
+          "ci_high": 1.0
+        },
+        "latency_ms": {
+          "value": 3693.6667,
+          "ci_low": 3402.0,
+          "ci_high": 3843.0
+        },
+        "sample_count": {
+          "value": 3.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "failure_rate": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        }
+      }
+    }
+  },
+  "paired": {},
+  "sanity": [
+    "Sahara WER here 0.422 \u00b7 Intron AfriHealth Kinyarwanda 0.258. Different corpora \u2014 theirs is clinical, this is conversational code-switched speech \u2014 so a gap is expected; an order of magnitude is not."
+  ],
+  "publishable": false,
+  "publishability_note": "1 of 10 provider calls failed (10%). A failed call is scored as an empty transcript, so these error rates measure the failures, not the models. Check WUNZI_MODE=live and that every provider has an API key."
+}

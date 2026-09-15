@@ -38,6 +38,12 @@ from app.schemas.speech import TranscriptionConfig
 
 logger = logging.getLogger("wunzi.afriswitch")
 
+
+def _fallback_notes(label: str) -> list[str]:
+    from app.benchmark.hf_audio import applicability_notes
+
+    return applicability_notes(label)
+
 CODE_SWITCH_METRICS = (
     "matrix_language_collapse_rate",
     "switch_point_preservation",
@@ -60,6 +66,9 @@ class UtteranceResult:
     code_switch: dict[str, float]
     latency_ms: int | None = None
     failed: bool = False
+    # Why it failed. "100% of calls failed" without the reason is the same
+    # unhelpful report one layer down: it names the symptom and hides the cause.
+    failure_reason: str | None = None
     used_placeholder_fixture: bool = False
 
 
@@ -70,6 +79,12 @@ class AfriSwitchReport:
     utterance_count: int
     dataset_notes: list[str]
     band_profile: dict[str, dict[str, float]]
+    # "afriswitch" or "fallback". Which metrics are meaningful depends on it, so
+    # it travels with the numbers rather than living in someone's memory.
+    source: str = "afriswitch"
+    # The dataset that actually loaded. Named so a reader never has to guess
+    # which corpus produced a figure.
+    source_label: str | None = None
     results: list[UtteranceResult] = field(default_factory=list)
     overall: dict[str, dict[str, dict[str, float]]] = field(default_factory=dict)
     by_band: dict[str, dict[str, dict[str, float]]] = field(default_factory=dict)
@@ -90,26 +105,54 @@ class AfriSwitchRunner:
         providers: list[str],
         config: str = "kinyarwanda",
         bootstrap_samples: int = 1000,
+        source: str = "afriswitch",
+        source_label: str | None = None,
     ) -> AfriSwitchReport:
+        code_switched = source == "afriswitch"
+
         report = AfriSwitchReport(
             config=config,
             providers=providers,
             utterance_count=len(utterances),
-            dataset_notes=verify_against_published(config, utterances),
-            band_profile=band_summary(utterances),
+            # Published statistics only exist for AfriSwitch; comparing a
+            # Common Voice load against them would report false mismatches.
+            dataset_notes=verify_against_published(config, utterances)
+            if code_switched
+            else _fallback_notes(source_label or "a monolingual Kinyarwanda corpus"),
+            source=source,
+            source_label=source_label,
+            # Every Common Voice utterance has CMI 0, so band tables would be one
+            # row pretending to be three.
+            band_profile=band_summary(utterances) if code_switched else {},
         )
 
         for provider_name in providers:
             for utterance in utterances:
                 report.results.append(await self._score(provider_name, utterance))
 
-        self._aggregate(report, bootstrap_samples)
-        self._pair(report, bootstrap_samples)
+        self._aggregate(report, bootstrap_samples, code_switched)
+        self._pair(report, bootstrap_samples, code_switched)
         report.sanity = self._sanity_check(report, config)
 
         placeholder = any(r.used_placeholder_fixture for r in report.results)
-        report.publishable = not placeholder
-        if placeholder:
+
+        # A failed call is recorded as an empty transcript, which scores WER 1.0
+        # — indistinguishable, in a table, from a model that transcribed badly.
+        # Without this the worst possible outcome (nothing was measured at all)
+        # renders as the most confident one (every model scored exactly 1.000).
+        failures = sum(1 for r in report.results if r.failed)
+        failure_rate = failures / len(report.results) if report.results else 0.0
+
+        report.publishable = not placeholder and failure_rate < 0.05
+
+        if failure_rate >= 0.05:
+            report.publishability_note = (
+                f"{failures} of {len(report.results)} provider calls failed "
+                f"({failure_rate:.0%}). A failed call is scored as an empty "
+                "transcript, so these error rates measure the failures, not the "
+                "models. Check WUNZI_MODE=live and that every provider has an API key."
+            )
+        elif placeholder:
             report.publishability_note = (
                 "At least one utterance was scored from a placeholder fixture rather "
                 "than a captured provider output. These numbers exercise the harness; "
@@ -132,6 +175,7 @@ class AfriSwitchRunner:
         hypothesis = ""
         latency = None
         failed = False
+        reason: str | None = None
         placeholder = False
 
         try:
@@ -146,6 +190,7 @@ class AfriSwitchRunner:
         except (AsrError, KeyError) as exc:
             # A provider failure is recorded, never replaced by another model.
             failed = True
+            reason = f"{type(exc).__name__}: {str(exc).strip(chr(39))[:180]}"
             log_event(
                 logger,
                 "afriswitch_provider_failed",
@@ -175,6 +220,7 @@ class AfriSwitchRunner:
             code_switch=scores.as_dict(),
             latency_ms=latency,
             failed=failed,
+            failure_reason=reason,
             used_placeholder_fixture=placeholder,
         )
 
@@ -195,19 +241,24 @@ class AfriSwitchRunner:
         return utterance.audio_path
 
     # ── aggregation ────────────────────────────────────────────────────────
-    def _aggregate(self, report: AfriSwitchReport, samples: int) -> None:
+    def _aggregate(self, report: AfriSwitchReport, samples: int, code_switched: bool = True) -> None:
         for provider in report.providers:
             rows = [r for r in report.results if r.provider == provider]
-            report.overall[provider] = self._summarise(rows, samples)
+            report.overall[provider] = self._summarise(rows, samples, code_switched)
+
+            if not code_switched:
+                continue
 
             for band in ("light", "moderate", "heavy"):
                 banded = [r for r in rows if r.cmi_band == band]
                 if banded:
                     report.by_band.setdefault(band, {})[provider] = self._summarise(
-                        banded, samples
+                        banded, samples, code_switched
                     )
 
-    def _summarise(self, rows: list[UtteranceResult], samples: int) -> dict[str, dict[str, float]]:
+    def _summarise(
+        self, rows: list[UtteranceResult], samples: int, code_switched: bool = True
+    ) -> dict[str, dict[str, float]]:
         def ci(values: list[float]) -> dict[str, float]:
             point, low, high = bootstrap_ci(values, samples)
             return {"value": round(point, 4), "ci_low": round(low, 4), "ci_high": round(high, 4)}
@@ -218,6 +269,11 @@ class AfriSwitchRunner:
         }
 
         for metric in CODE_SWITCH_METRICS:
+            # Switch preservation has no meaning without switches. Excluding it
+            # is the point: scoring monolingual audio 1.0 would hand every model
+            # free marks on the one axis this challenge is about.
+            if metric == "switch_point_preservation" and not code_switched:
+                continue
             summary[metric] = ci([r.code_switch[metric] for r in rows])
 
         latencies = [float(r.latency_ms) for r in rows if r.latency_ms is not None]
@@ -229,7 +285,7 @@ class AfriSwitchRunner:
 
         return summary
 
-    def _pair(self, report: AfriSwitchReport, samples: int) -> None:
+    def _pair(self, report: AfriSwitchReport, samples: int, code_switched: bool = True) -> None:
         """
         Paired bootstrap of Sahara against each other provider.
 
@@ -252,9 +308,12 @@ class AfriSwitchRunner:
             for metric, getter in (
                 ("word_error_rate", lambda r: r.wer),
                 ("character_error_rate", lambda r: r.cer),
+                # Same exclusion as the summary table: a metric with no meaning
+                # on this corpus must not reappear in the comparison.
                 *[
                     (m, (lambda m: lambda r: r.code_switch[m])(m))
                     for m in CODE_SWITCH_METRICS
+                    if code_switched or m != "switch_point_preservation"
                 ],
             ):
                 sahara_values, other_values = [], []
@@ -282,7 +341,11 @@ class AfriSwitchRunner:
         inverting completely. Either means the harness is wrong before it means
         anything about a model.
         """
-        if config != "kinyarwanda":
+        # Common Voice names the language `rw`; AfriSwitch names it
+        # `kinyarwanda`. Both are Kinyarwanda, and the cross-check against
+        # Intron's published figure is the main reason to run this at all —
+        # refusing it on a naming difference would throw away the validation.
+        if config.lower() not in {"kinyarwanda", "rw", "kin"}:
             return [f"No published reference on file for '{config}'; harness unverified."]
 
         notes: list[str] = []
@@ -292,9 +355,15 @@ class AfriSwitchRunner:
             return ["Sahara was not in this run, so the harness could not be cross-checked."]
 
         published = INTRON_REFERENCE_KINYARWANDA["sahara"]["wer"]
+        corpus = (
+            "conversational code-switched speech"
+            if report.source == "afriswitch"
+            else "read monolingual speech"
+        )
         notes.append(
-            f"Sahara WER here {sahara:.3f} · Intron AfriHealth Kinyarwanda {published:.3f} "
-            f"(clinical corpus, so a gap is expected; an order of magnitude is not)."
+            f"Sahara WER here {sahara:.3f} · Intron AfriHealth Kinyarwanda {published:.3f}. "
+            f"Different corpora — theirs is clinical, this is {corpus} — so a gap is "
+            f"expected; an order of magnitude is not."
         )
 
         if sahara > published * 3:
@@ -312,7 +381,11 @@ def run_sync(
     providers: list[str],
     config: str = "kinyarwanda",
     bootstrap_samples: int = 1000,
+    source: str = "afriswitch",
+    source_label: str | None = None,
 ) -> AfriSwitchReport:
     return asyncio.run(
-        AfriSwitchRunner().run(utterances, providers, config, bootstrap_samples)
+        AfriSwitchRunner().run(
+            utterances, providers, config, bootstrap_samples, source, source_label
+        )
     )

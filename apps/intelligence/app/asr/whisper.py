@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.asr.base import AsrProvider
-from app.asr.http_client import post_json, read_audio_bytes
+from app.asr.http_client import content_type_for, post_json, read_audio_bytes
 from app.schemas.speech import NormalizedSegment, NormalizedTranscript, TranscriptionConfig
 
 
@@ -19,12 +19,13 @@ class WhisperProvider(AsrProvider):
 
     async def _call(self, audio_uri: str, config: TranscriptionConfig) -> dict[str, Any]:
         audio = await read_audio_bytes(audio_uri)
+        filename, mime = content_type_for(audio_uri)
 
         return await post_json(
             self.name,
             f"{(self.base_url or '').rstrip('/')}/audio/transcriptions",
             headers={"Authorization": f"Bearer {self.api_key}"},
-            files={"file": ("audio.wav", audio, "audio/wav")},
+            files={"file": (filename, audio, mime)},
             data={
                 "model": self.model,
                 "response_format": "verbose_json",

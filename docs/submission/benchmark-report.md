@@ -223,12 +223,61 @@ python -m app.benchmark.afriswitch_cli run \
   --out benchmark/reports
 ```
 
+### Access
+
+AfriSwitch is gated behind **manual author review**. Access was requested on
+15 September 2026 and was still pending at submission time. That is stated here
+rather than left as an unexplained gap.
+
 ### Results
 
-**Pending a live provider run.** The harness is complete: dataset loader,
-stratified sampling, all five metrics, paired bootstrap, and the cross-check
-against Intron's published figure. Results belong in this section and nowhere
-else, and no placeholder numbers are presented in their place.
+**Pending.** The harness is complete: dataset loader, stratified sampling, all
+five metrics, paired bootstrap, and the cross-check against Intron's published
+figure. Results belong in this section and nowhere else, and no placeholder
+numbers are presented in their place.
+
+### Fallback source — a reachable Kinyarwanda corpus
+
+Because AfriSwitch access may not arrive in time, the harness also runs against a
+monolingual Kinyarwanda corpus. Which one is **discovered at runtime**: three
+obvious candidates failed for three different reasons — `datasets` 3.x dropped
+support for script-based repositories, which covers `mozilla-foundation/common_voice_17_0`,
+`fsicoli/common_voice_17_0` and `google/fleurs`. Rather than guess a fourth, the
+loader tries a ranked list, discovers the transcript and audio columns by name,
+and records which dataset actually produced the numbers.
+
+This is **read, monolingual speech**, and the report is explicit about what that
+changes:
+
+| Metric | On Common Voice |
+| --- | --- |
+| Word / Character Error Rate | **measured** — real Kinyarwanda, real providers |
+| Matrix Language Collapse | **measured** — a model returning English for a Kinyarwanda utterance has translated rather than transcribed, and that is detectable without any switches |
+| Span Language Fidelity | **measured** |
+| Switch Point Preservation | **excluded** — there are no switches to preserve |
+
+Switch preservation is excluded rather than scored 1.0. Scoring monolingual audio
+as perfect would hand every model a free mark on the one axis this challenge is
+about, and the exclusion is enforced in the runner, the paired comparison and the
+rendered report, with tests pinning each.
+
+Code-mixing stratification is suppressed for the same reason: every utterance has
+a Code-Mixing Index of zero, so band tables would be one row pretending to be
+three.
+
+**What this fallback is worth.** It does not measure code-switch handling, and no
+claim about code-switching should be drawn from it. What it does establish is
+that the harness works end to end against live provider APIs on real Kinyarwanda
+audio — and it triggers the cross-check against Intron's published Sahara WER of
+0.258, which is how a broken harness gets caught before it becomes a wrong
+conclusion.
+
+```bash
+python -m app.benchmark.afriswitch_cli run \
+  --source fallback --limit 200 \
+  --providers sahara,whisper,model_b,model_c \
+  --out benchmark/reports
+```
 
 ---
 

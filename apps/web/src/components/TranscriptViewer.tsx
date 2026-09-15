@@ -7,10 +7,13 @@ import type { PartyRole, TranscriptRun } from '@/lib/types';
  * The transcript, with language spans marked where — and only where — the
  * provider actually reported them.
  *
- * Sahara returns per-segment language; Whisper reports one language per
- * request. That difference is shown rather than smoothed over: a language tag
- * WUNZI invented would be a fabricated audit trail, and the whole point of the
- * benchmark is that provider metadata differs in ways that matter.
+ * Providers differ in what they expose. Intron's file-upload endpoint returns a
+ * flat transcript with no segments and no confidence; Whisper reports one
+ * language per request. Neither gives per-segment boundaries, so none are shown
+ * for them — a language tag WUNZI invented would be a fabricated audit trail.
+ *
+ * Where a provider does report spans, they are marked. Where it does not, the
+ * absence is stated instead of filled in.
  */
 export function TranscriptViewer({
   run,

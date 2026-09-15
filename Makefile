@@ -2,7 +2,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 
 .PHONY: help up down logs install migrate fresh seed demo test test-api test-intelligence \
-        test-web web-dev web-build check-routes check-migrations check-payloads benchmark benchmark-afriswitch benchmark-ablation capture lint
+        test-web web-dev web-build check-routes check-migrations check-payloads benchmark benchmark-afriswitch benchmark-fallback benchmark-ablation capture lint
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "\033[36m%-22s\033[0m %s\n",$$1,$$2}'
@@ -71,6 +71,12 @@ benchmark: ## Run the 4-ASR holdout benchmark and compute the Sponsor Outcome De
 benchmark-afriswitch: ## Tier 1 — WER/CER + code-switch metrics on AfriSwitch Kinyarwanda
 	$(COMPOSE) exec intelligence python -m app.benchmark.afriswitch_cli run \
 		--config kinyarwanda --limit 200 \
+		--providers sahara,whisper,model_b,model_c \
+		--out /benchmark/reports
+
+benchmark-fallback: ## Fallback tier 1 — Kinyarwanda accuracy when AfriSwitch access is pending
+	$(COMPOSE) exec intelligence python -m app.benchmark.afriswitch_cli run \
+		--source fallback --limit 200 \
 		--providers sahara,whisper,model_b,model_c \
 		--out /benchmark/reports
 

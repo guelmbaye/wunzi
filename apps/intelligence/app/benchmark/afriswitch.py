@@ -30,13 +30,19 @@ on import is a benchmark nobody can reason about.
 
 from __future__ import annotations
 
+import json
+import logging
 import re
+import tempfile
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Iterator
 
 DATASET_ID = "intronhealth/AfriSwitch"
 DEFAULT_CONFIG = "kinyarwanda"
 SPLIT = "test"
+
+logger = logging.getLogger("wunzi.afriswitch")
 
 # English spans are wrapped in the tagged transcription. This is the ground
 # truth for where a speaker actually switched — not something we infer.
@@ -164,16 +170,19 @@ def load_afriswitch(
     config: str = DEFAULT_CONFIG,
     limit: int | None = None,
     cmi_band: str | None = None,
+    audio_dir: Path | None = None,
 ) -> list[AfriSwitchUtterance]:
     """
     Loads one language config. Requires `datasets`, a Hugging Face login and
     acceptance of the dataset conditions.
 
-    `limit` samples deterministically across the CMI range rather than taking
-    the first N, because the first N of a sorted corpus is not a sample.
+    Metadata is read first and sampled before any audio is touched. `limit`
+    samples deterministically across the CMI range rather than taking the first
+    N, because the first N of a sorted corpus is not a sample — and materialising
+    all 1,577 clips to keep ten of them would waste minutes on every run.
     """
     try:
-        from datasets import load_dataset
+        from datasets import Audio, load_dataset
     except ImportError as exc:  # pragma: no cover - depends on the environment
         raise RuntimeError(
             "AfriSwitch needs the `datasets` package: pip install datasets"
@@ -181,29 +190,79 @@ def load_afriswitch(
 
     raw = load_dataset(DATASET_ID, config, split=SPLIT)
 
-    utterances = [
+    # decode=False keeps torchcodec out of the picture. `datasets` 4.x decodes
+    # audio through it — torch and FFmpeg, gigabytes of dependency — to produce
+    # an array this loader would immediately re-encode to a file. The ASR
+    # adapters want a file, so the original bytes are written straight through.
+    try:
+        raw = raw.cast_column("audio", Audio(decode=False))
+    except Exception as exc:  # noqa: BLE001 — the cast is an optimisation
+        logger.info("afriswitch_cast_skipped: %s: %s", type(exc).__name__, exc)
+
+    # Pass one: metadata only, so sampling costs nothing.
+    metadata = [
         AfriSwitchUtterance(
-            utterance_id=row.get("filename") or f"{config}-{index}",
-            language=row.get("language", config),
-            filename=row.get("filename", ""),
-            transcription=row.get("transcription", ""),
-            transcription_tagged=row.get("transcription_tagged", ""),
+            utterance_id=str(row.get("filename") or f"{config}-{index}"),
+            language=str(row.get("language", config)),
+            filename=str(row.get("filename", "")),
+            transcription=str(row.get("transcription", "")),
+            transcription_tagged=str(row.get("transcription_tagged", "")),
             cmi=float(row.get("cmi") or 0.0),
             num_switch_points=int(row.get("num_switch_points") or 0),
             duration=float(row.get("duration") or 0.0),
-            audio_path=(row.get("audio") or {}).get("path"),
-            spans=parse_spans(row.get("transcription_tagged", ""), config[:2]),
+            audio_path=None,
+            spans=parse_spans(str(row.get("transcription_tagged", "")), config[:2]),
         )
-        for index, row in enumerate(raw)
+        for index, row in enumerate(
+            raw.remove_columns([c for c in raw.column_names if c == "audio"])
+        )
     ]
 
     if cmi_band:
-        utterances = [u for u in utterances if u.cmi_band == cmi_band]
+        keep = {u.utterance_id for u in metadata if u.cmi_band == cmi_band}
+        metadata = [u for u in metadata if u.utterance_id in keep]
 
-    if limit is not None and limit < len(utterances):
-        utterances = stratified_sample(utterances, limit)
+    if limit is not None and limit < len(metadata):
+        metadata = stratified_sample(metadata, limit)
 
-    return utterances
+    # Pass two: write audio for the sampled clips only.
+    from app.benchmark.hf_audio import _audio_payload, _store_clip
+
+    root = Path(audio_dir or Path(tempfile.gettempdir()) / "wunzi-afriswitch-audio")
+    root.mkdir(parents=True, exist_ok=True)
+
+    wanted = {u.utterance_id: u for u in metadata}
+    resolved: list[AfriSwitchUtterance] = []
+
+    for index, row in enumerate(raw):
+        utterance_id = str(row.get("filename") or f"{config}-{index}")
+        target = wanted.get(utterance_id)
+        if target is None:
+            continue
+
+        payload = _audio_payload(row)
+        if payload is None:
+            logger.warning("afriswitch_no_audio: %s", utterance_id)
+            continue
+
+        path = _store_clip(payload, root, _safe_id(utterance_id))
+        if path is None:
+            logger.warning("afriswitch_empty_audio: %s", utterance_id)
+            continue
+
+        target.audio_path = str(path)
+        resolved.append(target)
+
+        if len(resolved) == len(wanted):
+            break
+
+    logger.info("afriswitch_loaded: %d clips from %s/%s", len(resolved), DATASET_ID, config)
+    return resolved
+
+
+def _safe_id(utterance_id: str) -> str:
+    stem = Path(utterance_id).stem
+    return "".join(ch for ch in stem if ch.isalnum() or ch in "-_")[:64] or "clip"
 
 
 def stratified_sample(

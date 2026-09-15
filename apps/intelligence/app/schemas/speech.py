@@ -4,6 +4,16 @@ from pydantic import BaseModel, Field
 
 
 class TranscriptionConfig(BaseModel):
+    """
+    `llm_corrections` and `category` exist because Intron's API applies LLM
+    post-processing by default, under a telehealth category. For a benchmark
+    that compares speech models, corrections are off: otherwise a corrected
+    pipeline is scored against a raw transcript. For production use they are a
+    product decision, made explicitly rather than inherited from a default.
+    """
+
+    llm_corrections: bool = False
+    category: str | None = None
     languages: list[str] = Field(default_factory=lambda: ["rw", "en", "fr"])
     diarize: bool = False
     timestamps: bool = True

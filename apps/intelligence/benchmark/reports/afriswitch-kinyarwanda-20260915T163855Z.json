@@ -1,0 +1,429 @@
+{
+  "config": "kinyarwanda",
+  "providers": [
+    "sahara"
+  ],
+  "utterance_count": 10,
+  "dataset_notes": [
+    "Loaded 10 utterances, dataset card says 1577. A sampled run is fine; a full run is not."
+  ],
+  "band_profile": {
+    "light": {
+      "utterances": 3,
+      "hours": 0.009,
+      "mean_cmi": 5.54,
+      "mean_switch_points": 2.33
+    },
+    "moderate": {
+      "utterances": 4,
+      "hours": 0.013,
+      "mean_cmi": 13.03,
+      "mean_switch_points": 5.25
+    },
+    "heavy": {
+      "utterances": 3,
+      "hours": 0.004,
+      "mean_cmi": 24.85,
+      "mean_switch_points": 3.33
+    }
+  },
+  "source": "afriswitch",
+  "source_label": null,
+  "results": [
+    {
+      "utterance_id": "-1FoqOayPcE_chunk_1505104-1519312_149.wav",
+      "provider": "sahara",
+      "cmi": 6.059999942779541,
+      "cmi_band": "light",
+      "num_switch_points": 3,
+      "duration": 14.208000183105469,
+      "reference": "Ntihazagire umuntu ugira ikibazo cyangwa se ugira icyo yifuza kutwunganiraho ngo atinye kubitubwira bazabitubwire kuri platforms zacu izo ari zo zose tuzabasubiza kandi tuzababwira tuzabamenyesha uburyo butandukanye bwo kugira ngo babe batu joining",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "GqUsSiJnSR8_chunk_1619200-1623168_186.wav",
+      "provider": "sahara",
+      "cmi": 27.270000457763672,
+      "cmi_band": "heavy",
+      "num_switch_points": 4,
+      "duration": 3.9679999351501465,
+      "reference": "Ahitemo noneho ugendeye kuri talent, talent rero, talent se ko zitagereranywa.",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "ePB3Qr8ikOA_chunk_792720-799088_84.wav",
+      "provider": "sahara",
+      "cmi": 12.5,
+      "cmi_band": "moderate",
+      "num_switch_points": 2,
+      "duration": 6.368000030517578,
+      "reference": "ugende wumva koko ufite support impande zose nkubushize naragiye ariko ubwo urumva nari uwumwe ariko ubungubu",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "-1FoqOayPcE_chunk_2517760-2522224_262.wav",
+      "provider": "sahara",
+      "cmi": 20.0,
+      "cmi_band": "heavy",
+      "num_switch_points": 4,
+      "duration": 4.464000225067139,
+      "reference": "Ni ibintu bimwe ndimo gutekereza no kuvugaho muri vlogs zanjye",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.1,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "B1zdC4OVvRI_chunk_2210912-2228576_265.wav",
+      "provider": "sahara",
+      "cmi": 18.18000030517578,
+      "cmi_band": "moderate",
+      "num_switch_points": 10,
+      "duration": 17.663999557495117,
+      "reference": "Kuko urumva Ni umusaza aba abizi man.. Sizigura ibihumbi bitanu? Hari ahantu. Zigura cinq mille, ariko kwa muganga, uragenda ukajyana, si photocopie y'irangamuntu se hari umunyarwanda udafite mituweli? Akayerekana. Ni ibiceri deux cents cinquante, niba atari trois cents yishyura, akagenda bakamukorera iyo gahunda, akigendera.",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "N8O0D4ByU3g_chunk_1201892-1213216_142.wav",
+      "provider": "sahara",
+      "cmi": 10.34000015258789,
+      "cmi_band": "moderate",
+      "num_switch_points": 5,
+      "duration": 11.324000358581543,
+      "reference": "oya cyane kabisa ni ibintu byumvikana. ibyo bintu nibyo kuko nahise ntekereza no kuri kiz nubundi urumva ko bamuhaye time agaragaza ko ashoboye urebye indirimbo yakoreye isano yakoreye Melody",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0345,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "aTojwrxJk4A_chunk_1743152-1751600_153.wav",
+      "provider": "sahara",
+      "cmi": 5.0,
+      "cmi_band": "light",
+      "num_switch_points": 2,
+      "duration": 8.447999954223633,
+      "reference": "Tuvuga muri business tangira ugire akantu winjiza kanagaragara aho kaciye yego utangire wubake amateka y'ubukungu bwawe kugirango ugire aho ugera",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "-1FoqOayPcE_chunk_2072080-2082464_210.wav",
+      "provider": "sahara",
+      "cmi": 11.109999656677246,
+      "cmi_band": "moderate",
+      "num_switch_points": 4,
+      "duration": 10.383999824523926,
+      "reference": "Ibyo nkwibarizagaho, ubagezeho, kuko njye aho nagiye ibyanjye simbivuze. Wowe ubagezeho. Like, wabonye iki, amaso yawe yabonye iki?",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "cYJ-nwX-TgE_chunk_1980720-1985792_238.wav",
+      "provider": "sahara",
+      "cmi": 27.270000457763672,
+      "cmi_band": "heavy",
+      "num_switch_points": 2,
+      "duration": 5.072000026702881,
+      "reference": "Ariko hari igihugu bagufatana urumogi, it's good. none kuki byo tubyamagana?",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    },
+    {
+      "utterance_id": "HCJ03E1K7SI_chunk_1501680-1512976_83.wav",
+      "provider": "sahara",
+      "cmi": 5.559999942779541,
+      "cmi_band": "light",
+      "num_switch_points": 2,
+      "duration": 11.29598617553711,
+      "reference": "Yego birashoboka ushobora gusanga umuntu ari umukinnyi bitewe na character runaka yakinnye kuko abanyarwanda ntabwo ntago turagera kurwego",
+      "hypothesis": "",
+      "wer": 1.0,
+      "cer": 1.0,
+      "code_switch": {
+        "matrix_language_collapse_rate": 0.0,
+        "switch_point_preservation": 0.0,
+        "span_language_fidelity": 0.0,
+        "english_ratio_reference": 0.0,
+        "english_ratio_hypothesis": 0.0
+      },
+      "latency_ms": null,
+      "failed": true,
+      "failure_reason": "AsrError: [sahara] request rejected (400): {\"data\":{},\"message\":\"use_language_asr_input kinyarwanda is not supported\",\"status\":\"Error\"}\n",
+      "used_placeholder_fixture": false
+    }
+  ],
+  "overall": {
+    "sahara": {
+      "word_error_rate": {
+        "value": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0
+      },
+      "character_error_rate": {
+        "value": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0
+      },
+      "matrix_language_collapse_rate": {
+        "value": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "switch_point_preservation": {
+        "value": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "span_language_fidelity": {
+        "value": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "sample_count": {
+        "value": 10.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "failure_rate": {
+        "value": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0
+      }
+    }
+  },
+  "by_band": {
+    "light": {
+      "sahara": {
+        "word_error_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        },
+        "character_error_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        },
+        "matrix_language_collapse_rate": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "switch_point_preservation": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "span_language_fidelity": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "sample_count": {
+          "value": 3.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "failure_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        }
+      }
+    },
+    "moderate": {
+      "sahara": {
+        "word_error_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        },
+        "character_error_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        },
+        "matrix_language_collapse_rate": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "switch_point_preservation": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "span_language_fidelity": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "sample_count": {
+          "value": 4.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "failure_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        }
+      }
+    },
+    "heavy": {
+      "sahara": {
+        "word_error_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        },
+        "character_error_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        },
+        "matrix_language_collapse_rate": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "switch_point_preservation": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "span_language_fidelity": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "sample_count": {
+          "value": 3.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0
+        },
+        "failure_rate": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0
+        }
+      }
+    }
+  },
+  "paired": {},
+  "sanity": [
+    "Sahara WER here 1.000 \u00b7 Intron AfriHealth Kinyarwanda 0.258. Different corpora \u2014 theirs is clinical, this is conversational code-switched speech \u2014 so a gap is expected; an order of magnitude is not.",
+    "Sahara WER is more than 3x the published figure. Check audio resampling, the normalisation step and the language hints before reading anything into these results."
+  ],
+  "publishable": false,
+  "publishability_note": "10 of 10 provider calls failed (100%). A failed call is scored as an empty transcript, so these error rates measure the failures, not the models. Check WUNZI_MODE=live and that every provider has an API key."
+}

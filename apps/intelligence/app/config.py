@@ -22,8 +22,11 @@ class Settings(BaseSettings):
     default_asr_provider: str = "sahara"
 
     sahara_api_key: str | None = None
-    sahara_base_url: str = "https://api.intron.ai/sahara/v2.5"
-    sahara_model: str = "sahara-2.5-trilingual"
+    # Published at docs.voice.intron.io/docs/stt/file-upload-sync.
+    sahara_base_url: str = "https://infer.voice.intron.io"
+    # The sync upload endpoint takes no model parameter; this is a label for
+    # the benchmark report, not something sent on the wire.
+    sahara_model: str = "intron-sahara-stt"
 
     whisper_api_key: str | None = None
     whisper_base_url: str = "https://api.openai.com/v1"
