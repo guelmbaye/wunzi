@@ -22,14 +22,14 @@
       "start_ms": 8800,
       "end_ms": 10800,
       "text": "Ntabwo nangije icyumba.",
-      "language": "fr",
+      "language": "rw",
       "confidence": 0.95
     },
     {
       "start_ms": 10800,
       "end_ms": 13605,
       "text": "He says there is damage but ntabwo ari njye wangije.",
-      "language": "rw",
+      "language": "en",
       "confidence": 0.91
     },
     {

@@ -5,6 +5,15 @@ import { BenchmarkComparison } from '@/components/BenchmarkComparison';
 import { MetricCards, SponsorDeltaCard } from '@/components/SponsorDeltaCard';
 import { ApiError, api } from '@/lib/api';
 
+/*
+ * Rendered per request, never at build time.
+ *
+ * With ISR these pages were prerendered inside the Docker build, where no API
+ * is running and LARAVEL_API_URL is unset — so the connection error was baked
+ * into the static HTML and served to every visitor afterwards.
+ */
+export const dynamic = 'force-dynamic';
+
 export const metadata = { title: 'Benchmark run' };
 
 export default async function BenchmarkRunPage({

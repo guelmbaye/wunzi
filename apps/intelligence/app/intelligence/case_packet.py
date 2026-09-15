@@ -184,17 +184,58 @@ class CasePacketGenerator:
         return rendered
 
     # ── helpers ────────────────────────────────────────────────────────────
+    # The same phrase table as Claim::PHRASES on the Laravel side. Both services
+    # render neutral sentences, and a mediator reading the case packet beside the
+    # claim cards must not see two different sentences for one claim.
+    PHRASES: dict[str, tuple[str, str, str, str | None]] = {
+        # predicate                positive                          negative                                impersonal                                    self
+        "paid_deposit":           ("paid the deposit",               "did not pay the deposit",              "a deposit was paid",                         None),
+        "states_deposit_amount":  ("stated the deposit amount",      "disputed the deposit amount",          "a deposit amount was stated",                "states the deposit amount"),
+        "caused_damage":          ("caused damage to the property",  "did not cause damage to the property", "damage to the property occurred",            None),
+        "bears_responsibility":   ("was responsible for the damage", "was not responsible for the damage",   "responsibility for the damage was asserted", None),
+        "promised_refund":        ("promised a full refund",         "did not promise a full refund",        "a full refund was promised",                 None),
+        "states_move_out_date":   ("gave the tenancy end date as",   "disputed the tenancy end date",        "a tenancy end date was stated",              "gives the tenancy end date as"),
+        "states_payment_date":    ("gave the payment date as",       "disputed the payment date",            "a payment date was stated",                  "gives the payment date as"),
+        "claims_repair_cost":     ("stated the repair cost",         "disputed the repair cost",             "a repair cost was stated",                   "states the repair cost"),
+        "mentions_evidence":      ("referred to evidence",           "had no evidence to refer to",          "evidence was referred to",                   "refers to evidence"),
+        "requests_outcome":       ("requested an outcome",           "requested no outcome",                 "an outcome was requested",                   "requests an outcome"),
+        "requests_refund_amount": ("requested a refund amount",      "requested no refund",                  "a refund was requested",                     "requests a refund amount"),
+    }
+
     def _neutral_sentence(self, claim: PacketClaim) -> str:
         speaker = self._role_label(claim.party_role)
-        subject = {"party_a": "Party A", "party_b": "Party B"}.get(claim.subject or "", None)
-        negation = " did not " if claim.polarity == "NEGATIVE" else " "
-        predicate = claim.predicate.replace("_", " ")
+        subject = {"party_a": "Party A", "party_b": "Party B"}.get(claim.subject or "")
+        negative = claim.polarity == "NEGATIVE"
         value = self._format_value(claim.canonical_value)
 
-        if claim.reported_speech and subject and subject != speaker:
-            base = f"{speaker} states that {subject}{negation}{predicate}"
+        phrases = self.PHRASES.get(claim.predicate)
+
+        if phrases is None:
+            # An unknown predicate is rendered plainly rather than guessed at.
+            # Losing the attribution would be worse than an awkward sentence.
+            plain = claim.predicate.replace("_", " ")
+            base = (
+                f"{speaker} states: {plain}"
+                if subject is None
+                else f"{speaker} states that {subject}: {plain}"
+            )
+            return f"{base} ({value})." if value else f"{base}."
+
+        positive, negated, impersonal, direct = phrases
+
+        # No subject means an existential statement — "there was damage to the
+        # wall". Naming a person there would invent an accusation.
+        if subject is None:
+            base = f"{speaker} states that {'no ' if negative else ''}{impersonal}"
+        elif direct is not None and subject == speaker and not negative:
+            # Some predicates are speech acts; reporting them through "states
+            # that" doubles the verb.
+            base = f"{speaker} {direct}"
         else:
-            base = f"{speaker} states{negation}{predicate}"
+            # The party is named even when it repeats the speaker: "they" would
+            # need plural agreement while a named party needs singular, and one
+            # table cannot serve both.
+            base = f"{speaker} states that {subject} {negated if negative else positive}"
 
         return f"{base} ({value})." if value else f"{base}."
 

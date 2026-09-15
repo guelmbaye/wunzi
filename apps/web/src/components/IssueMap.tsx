@@ -64,7 +64,12 @@ function IssueRow({ issue }: { issue: Issue }) {
   const state = ISSUE_STATE[issue.status];
   const valueA = formatValue(issue.party_a_value);
   const valueB = formatValue(issue.party_b_value);
-  const twoSided = issue.status === 'DISPUTED' || (Boolean(valueA) && Boolean(valueB));
+  // Two columns only when there are two values to put in them. A disputed
+  // issue with nothing on either side — a polarity conflict, "I damaged it"
+  // against "I did not" — would otherwise render as "No information" twice,
+  // asserting a disagreement while showing none of it. There the reason is the
+  // information.
+  const twoSided = Boolean(valueA) || Boolean(valueB);
 
   return (
     <article className={clsx('rounded-card border', state.panel)}>

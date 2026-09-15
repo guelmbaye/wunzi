@@ -239,19 +239,18 @@ export const api = {
 
   // ── benchmark ────────────────────────────────────────────────────────────
   async listBenchmarkRuns(): Promise<BenchmarkRun[]> {
-    const envelope = await call('/benchmark-runs', { revalidate: 30 });
+    const envelope = await call('/benchmark-runs');
     return list(envelope.data) as unknown as BenchmarkRun[];
   },
 
   async getBenchmarkRun(runId: string): Promise<BenchmarkRun> {
-    const envelope = await call(`/benchmark-runs/${runId}`, { revalidate: 30 });
+    const envelope = await call(`/benchmark-runs/${runId}`);
     return record(envelope.data) as unknown as BenchmarkRun;
   },
 
   async getSameAudioComparison(runId: string, clipId?: string): Promise<SameAudioComparison> {
     const envelope = await call(
       `/benchmark-runs/${runId}/same-audio${clipId ? `?clip_id=${clipId}` : ''}`,
-      { revalidate: 30 },
     );
     const data = record(envelope.data);
     return (Object.keys(data).length ? data : envelope) as unknown as SameAudioComparison;

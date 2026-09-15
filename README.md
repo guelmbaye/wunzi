@@ -134,6 +134,12 @@ The guards are duplicated across both services on purpose. A single guard is a
 single point of failure, and adjudicative prose reaching a mediator is the
 failure mode with the highest cost.
 
+## Challenge submission
+
+The four required deliverables live in [`docs/submission/`](docs/submission/):
+solution description, benchmark report, ethics and inclusion note, and a runbook
+for the demo video.
+
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md) — shape, state machine, provenance chain

@@ -5,6 +5,15 @@ import { formatRelative } from '@/lib/states';
 import { PROVIDER_LABEL } from '@/components/BenchmarkComparison';
 import { ServiceUnavailable } from '@/components/ServiceUnavailable';
 
+/*
+ * Rendered per request, never at build time.
+ *
+ * With ISR these pages were prerendered inside the Docker build, where no API
+ * is running and LARAVEL_API_URL is unset — so the connection error was baked
+ * into the static HTML and served to every visitor afterwards.
+ */
+export const dynamic = 'force-dynamic';
+
 export const metadata = { title: 'Benchmark' };
 
 /**

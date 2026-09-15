@@ -144,6 +144,7 @@ class ClaimExtractor:
         for span in spans:
             claims.extend(self._claims_for_span(span, party_id, party_role))
 
+        claims = self._merge_repeats(claims)
         supersessions = self._detect_supersessions(spans, claims)
         return claims, supersessions
 
@@ -194,7 +195,13 @@ class ClaimExtractor:
         deduction_context = _contains(lowered, lexicon.DEDUCTION_MARKERS)
 
         # 1. Deposit existence
-        if deposit_context:
+        #
+        # A clause that merely names the deposit while asking for something
+        # else — "I want to deduct the repair cost before returning the
+        # deposit" — is a requested outcome, not an assertion that a deposit was
+        # paid. Emitting both put "paid the deposit" on a party's intake twice,
+        # once from a sentence that never claimed it.
+        if deposit_context and not _contains(lowered, lexicon.REQUESTED_OUTCOME_MARKERS):
             emit("deposit_paid", "paid_deposit", {"asserted": True}, Criticality.HIGH)
 
         # 2. Amounts — always critical. Repair cost is distinguished from deposit.
@@ -259,6 +266,58 @@ class ClaimExtractor:
         return claims
 
     # ── self-correction ────────────────────────────────────────────────────
+    def _merge_repeats(self, claims: list[ExtractedClaim]) -> list[ExtractedClaim]:
+        """
+        Collapses a proposition a speaker stated more than once.
+
+        Party A says "ntabwo nangije icyumba" and then "ntabwo ari njye wangije"
+        — two clauses, one position. Emitting both as separate claims made the
+        intake screen list "did not cause damage" three times and inflated the
+        claim count a mediator reads.
+
+        This is a merge, not a drop: the source segments of every repeat are kept
+        on the surviving claim, so the provenance chain still reaches each place
+        the speaker said it. A restatement is one position with two sources.
+
+        Polarity, subject and reported_speech are part of the key. "I did not
+        damage it" and "he says I damaged it" are different propositions and must
+        never collapse into one.
+        """
+        merged: dict[tuple, ExtractedClaim] = {}
+
+        for claim in claims:
+            value = claim.canonical_value or {}
+            key = (
+                claim.type,
+                claim.predicate,
+                claim.polarity,
+                claim.subject,
+                claim.reported_speech,
+                value.get("amount_minor"),
+                value.get("iso_date"),
+                value.get("day"),
+                value.get("month"),
+                value.get("scope"),
+                value.get("evidence_type"),
+            )
+
+            existing = merged.get(key)
+            if existing is None:
+                merged[key] = claim
+                continue
+
+            for segment_id in claim.source_segments:
+                if segment_id not in existing.source_segments:
+                    existing.source_segments.append(segment_id)
+
+            # The clearest hearing of a repeated statement is the one to keep.
+            # Confidence is nullable: a provider that reports none leaves it
+            # unset, and comparing two Nones raises.
+            if (claim.extraction_confidence or 0.0) > (existing.extraction_confidence or 0.0):
+                existing.extraction_confidence = claim.extraction_confidence
+
+        return list(merged.values())
+
     def _detect_supersessions(self, spans: list[Span], claims: list[ExtractedClaim]) -> list[Supersession]:
         """
         "It was the tenth… no, the twelfth of August."
