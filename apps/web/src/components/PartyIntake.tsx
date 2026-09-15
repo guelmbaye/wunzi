@@ -37,6 +37,7 @@ export function PartyIntake({
   partyName,
   initialRecording,
   initialClaims,
+  fixtureKey,
 }: {
   caseId: string;
   role: PartyRole;
@@ -44,6 +45,7 @@ export function PartyIntake({
   partyName: string;
   initialRecording: Recording | null;
   initialClaims: Claim[];
+  fixtureKey?: string | null;
 }) {
   const router = useRouter();
   const [recording, setRecording] = useState(initialRecording);
@@ -92,6 +94,7 @@ export function PartyIntake({
           partyId={partyId}
           role={role}
           partyName={partyName}
+          fixtureKey={fixtureKey}
           onUploaded={() => void poll()}
         />
       )}

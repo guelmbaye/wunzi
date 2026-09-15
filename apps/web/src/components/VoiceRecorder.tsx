@@ -27,12 +27,22 @@ export function VoiceRecorder({
   partyId,
   role,
   partyName,
+  fixtureKey,
   onUploaded,
 }: {
   caseId: string;
   partyId: string;
   role: PartyRole;
   partyName: string;
+  /**
+   * Set only when the deployment replays stored provider output.
+   *
+   * In fixture mode a freshly recorded file has no cached transcription, so the
+   * job fails and the recording is marked FAILED. Rather than let that look like
+   * a bug, the screen offers the stored consented clip as a clearly labelled
+   * alternative — it never substitutes it for something the speaker just said.
+   */
+  fixtureKey?: string | null;
   onUploaded: (recordingId: string) => void;
 }) {
   const [phase, setPhase] = useState<Phase>('idle');
@@ -109,12 +119,17 @@ export function VoiceRecorder({
     setPhase('consent');
   }
 
-  async function upload(file: Blob, durationMs: number) {
+  async function upload(file: Blob | null, durationMs: number, storedKey?: string) {
     setPhase('uploading');
     setError(null);
 
     const form = new FormData();
-    form.append('audio', file, 'account.webm');
+    if (file) {
+      form.append('audio', file, 'account.webm');
+    } else if (storedKey) {
+      // No file: the API treats this as a replay of a stored consented clip.
+      form.append('fixture_key', storedKey);
+    }
     form.append('consent_recorded', 'true');
     form.append('duration_ms', String(durationMs));
 
@@ -240,6 +255,24 @@ export function VoiceRecorder({
 
         {previewUrl && phase === 'review' && (
           <audio controls src={previewUrl} className="mt-5 w-full" />
+        )}
+
+        {fixtureKey && (phase === 'consent' || phase === 'error') && (
+          <div className="mt-6 border-t border-rule pt-5">
+            <p className="text-sm text-ink-soft">
+              This deployment replays stored provider output rather than calling a
+              speech API, so a recording made now has no transcription to return.
+              Use the stored consented clip instead.
+            </p>
+            <button
+              type="button"
+              onClick={() => upload(null, 0, fixtureKey)}
+              className="btn-secondary mt-3"
+            >
+              Use the stored recording for {partyName}
+            </button>
+            <p className="tabular mt-2 text-micro text-ink-faint">{fixtureKey}</p>
+          </div>
         )}
 
         {/* A microphone that will not open must never end the intake. */}

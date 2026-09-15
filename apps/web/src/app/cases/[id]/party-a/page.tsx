@@ -24,6 +24,10 @@ export default async function PartyAPage({ params }: { params: Promise<{ id: str
       partyName={party.display_name}
       initialRecording={recordings.find((item) => item.party_id === party.id) ?? null}
       initialClaims={claims}
+      // Only in fixture deployments, and named rather than silently applied.
+      fixtureKey={
+        process.env.NEXT_PUBLIC_DEMO_MODE === 'fixture' ? 'WZ_DEMO_001_A' : null
+      }
     />
   );
 }
