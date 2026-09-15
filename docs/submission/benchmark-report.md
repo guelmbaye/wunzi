@@ -13,22 +13,32 @@ separated here rather than blended into one table.
 | | Evidence | Status |
 | --- | --- | --- |
 | **A** | Intron's published AfriHealth MultiBench results, Kinyarwanda | Third-party, published, cited below |
-| **B** | WUNZI Tier 1 — AfriSwitch WER/CER + code-switch integrity | Harness complete and tested; **awaiting a live provider run** |
+| **B** | WUNZI Tier 1 — AfriSwitch WER/CER + code-switch integrity | **Measured.** Sahara and Whisper, 200 utterances, live API calls |
 | **C** | WUNZI Tier 2 — mediation outcome (CMSR) | Pipeline verified end to end; **fixtures are placeholders** |
 
 **Layer A is real data.** It is not ours, and we cite it as someone else's
 measurement.
 
-**Layers B and C are our harness.** The code runs, the metrics are implemented and
-unit-tested, and the end-to-end path is verified. What is missing is a live run
-against the four provider APIs on consented audio. Until that happens, no number
-this repository produces describes any speech model's real behaviour — and the
-software says so itself: the runner sets `publishable: false`, the generated
-report prints a **NOT PUBLISHABLE** banner, and the web interface refuses to
-render the headline figure.
+**Layer B is measured.** Sahara and Whisper were run against the live APIs on 200
+AfriSwitch Kinyarwanda utterances. Model B and Model C were not: Sahara's credits
+were exhausted by the measured run. The adapters exist and the harness treats all
+four identically, so what is missing is credit, not work.
 
-We would rather submit a benchmark that states what it has not yet measured than
-one that quietly presents a smoke test as a result.
+**Layer C is the harness, not a measurement.** The mediation-outcome pipeline is
+verified end to end, but its fixtures are placeholders. The software says so
+itself: the runner sets `publishable: false`, the report prints a **NOT
+PUBLISHABLE** banner, and the interface refuses to render the headline figure.
+
+Two corrections were made to the methodology during the measured runs, and both
+are recorded rather than quietly folded in:
+
+- An early ten-utterance sample suggested switch preservation collapsed under
+  heavy mixing. At 200 it did not — 0.34, 0.41, 0.43, flat. The pattern was
+  noise, and the confidence intervals are why it was caught.
+- Failed calls were being scored as empty transcripts and averaged in, inflating
+  Sahara's word error rate from 0.36 to 0.40. A failure is a failure to measure,
+  not a measurement of zero; error rates are now computed over successful calls
+  with the failure rate reported separately.
 
 ---
 
@@ -246,10 +256,71 @@ rather than left as an unexplained gap.
 
 ### Results
 
-**Pending.** The harness is complete: dataset loader, stratified sampling, all
-five metrics, paired bootstrap, and the cross-check against Intron's published
-figure. Results belong in this section and nowhere else, and no placeholder
-numbers are presented in their place.
+**Corpus:** `intronhealth/AfriSwitch`, Kinyarwanda, `test` split. 200 utterances
+sampled proportionally across code-mixing bands — 63 light, 71 moderate, 66
+heavy; mean CMI 6.6 / 13.8 / 30.4.
+
+**Scoring:** error rates over successful calls only. Sahara 188 of 200 scored
+(12 clips returned `FILE_QUEUED`); Whisper 192 of 200 (8 network failures).
+
+| Metric | Sahara | Whisper | |
+| --- | --- | --- | --- |
+| Word Error Rate | **0.36** | 0.99 | lower is better |
+| Character Error Rate | **0.26** | 0.66 | lower is better |
+| Matrix Language Collapse | **0.01** | 0.15 | lower is better |
+| Switch Point Preservation | **0.40** | 0.20 | higher is better |
+| Span Language Fidelity | **0.84** | 0.03 | higher is better |
+
+**Harness cross-check.** Sahara's 0.36 sits against Intron's published 0.26 on
+their clinical Kinyarwanda set. This corpus is conversational and code-switched,
+which is harder, so the gap is what one would expect — and it is printed on every
+run, because a harness landing an order of magnitude away is broken before it is
+interesting.
+
+### What the numbers say
+
+**Span fidelity is the finding: 0.84 against 0.03.** Whisper does not reproduce
+the Kinyarwanda at all. Its word error rate of 0.99 says the output is unrelated
+to the reference; span fidelity says *why* — the matrix language is simply gone.
+Matrix collapse at 0.15 completes the picture: in roughly one clip in seven it
+produced English instead.
+
+That is exactly the failure this benchmark was built to separate. WER alone
+reports "bad" for both a model that misheard and a model that translated. The
+two need entirely different responses, and in mediation only one of them is
+recoverable: a misheard amount can be confirmed with the speaker, while a
+translated account is no longer the speaker's words at all.
+
+**Sahara transcribes rather than translates.** Matrix collapse 0.01, span
+fidelity 0.84. But it reproduces only about 40% of the English insertions, and
+that holds across mixing intensity — word error rate rises with density (0.33 →
+0.42 → 0.45) while switch preservation stays flat. A model can hold its error
+rate and still stop reproducing how a person actually spoke.
+
+### The fairness question, stated plainly
+
+**Whisper does not support Kinyarwanda.** It is absent from OpenAI's documented
+language list, and there is no language code to pass — the API auto-detects, and
+on this audio it detects something else.
+
+So this is not a like-for-like contest between two models trained for the task.
+It measures what happens when a general-purpose multilingual model meets a
+language outside its coverage, which is the situation a Rwandan mediation service
+would actually face if it reached for the obvious tool. Reporting it as "Whisper
+scores 0.99" without that sentence would be a cheap shot; reporting the numbers
+with it is the point.
+
+Intron's own AfriHealth benchmark gives the same picture from a different angle:
+GPT-4o at 0.84 and Qwen3 at 1.00 WER on Kinyarwanda, against Sahara at 0.26.
+Models without African-language training do not degrade gracefully here — they
+fail completely.
+
+### What is missing
+
+Two models, not four. Model B and Model C were not run: Sahara's API credits were
+exhausted by the measured run, and the remaining budget covered neither. The
+adapters are implemented and the harness treats all four identically, so
+completing the comparison is a matter of credit rather than of work.
 
 ### Fallback source — a reachable Kinyarwanda corpus
 
